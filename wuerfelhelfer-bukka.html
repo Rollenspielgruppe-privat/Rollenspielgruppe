@@ -130,7 +130,7 @@ td input,td select{padding:4px 6px}
   <details id="settings">
     <summary>Werte bearbeiten</summary>
     <div class="form">
-      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg oder für einen anderen Charakter einfach anpassen. Die Werte gelten, bis die Seite neu geladen wird. Zum Aufheben unten „Werte kopieren“ tippen und den Text sichern; später einfügen und „Laden“ tippen.</p>
+      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg oder für einen anderen Charakter einfach anpassen. Alles wird nur auf diesem Gerät in diesem Browser gespeichert, nichts wird übertragen. Für ein anderes Gerät unten „Werte kopieren“ nutzen.</p>
       <div class="fields">
         <label class="f">Name<input id="sName"></label>
         <label class="f">Untertitel<input id="sSub"></label>
@@ -207,8 +207,11 @@ const DEFAULT={
 };
 const LEG=[null,{enh:2,crit:19},{enh:3,crit:18},{enh:4,crit:18},{enh:5,crit:17}];
 let S;
-function load(){S=structuredClone(DEFAULT)}
-function save(){}
+function load(){try{let t=localStorage.getItem(KEY),old=false;if(!t){t=localStorage.getItem(OLDKEY);old=!!t}
+  if(t){S=Object.assign(structuredClone(DEFAULT),JSON.parse(t));S.sits=Object.assign({},DEFAULT.sits,S.sits);S.fu=Object.assign({},DEFAULT.fu,S.fu);
+    S.weapons.forEach(w=>{if(w.focus===undefined&&/Bastardschwert|Firstmesser/.test(w.name))w.focus=true;if(old)w.name=w.name.replace('Bastardschwert','Firstmesser')});
+    if(old){S.leg=Math.max(S.leg||0,1);save()}return}}catch(e){} S=structuredClone(DEFAULT)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=id=>document.getElementById(id);
 const sg=n=>(n>=0?'+':'−')+Math.abs(n);
 const rnd=s=>1+Math.floor(Math.random()*s);

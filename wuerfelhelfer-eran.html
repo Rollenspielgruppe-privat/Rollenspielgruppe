@@ -150,7 +150,7 @@ td input,td select{padding:4px 6px}
   <details id="settings">
     <summary>Werte bearbeiten</summary>
     <div class="form">
-      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg einfach anpassen. Die Werte gelten, bis die Seite neu geladen wird. Zum Aufheben unten „Werte kopieren“ tippen und den Text sichern; später einfügen und „Laden“ tippen.</p>
+      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg einfach anpassen. Alles wird nur auf diesem Gerät in diesem Browser gespeichert, nichts wird übertragen. Für ein anderes Gerät unten „Werte kopieren“ nutzen.</p>
       <div class="fields">
         <label class="f">Name<input id="sName"></label>
         <label class="f">Untertitel<input id="sSub"></label>
@@ -229,15 +229,15 @@ const DEFAULT={
     {name:'Trank: Unsichtbarkeit',max:1,per:'Tag',used:0,text:''},
     {name:'Schriftrolle: Magie bannen',max:1,per:'Tag',used:0,text:''}
   ],
-  sits:{flank:false,bless:false,haste:false,prone:false,intoMelee:false,charge:false},
+  sits:{flank:false,bless:false,haste:false,prone:false,intoMelee:false,charge:false,evil:false},
   weapon:0, mode:'full', lkUsed:0
 };
 const LEG=[null,{enh:2,crit:19},{enh:3,crit:18},{enh:4,crit:18},{enh:5,crit:17}];
 const ENERGIES=['Feuer','Kälte','Elektrizität','Säure'];
 let S;
 function migrate(){S.sits=Object.assign({},DEFAULT.sits,S.sits)}
-function load(){S=structuredClone(DEFAULT)}
-function save(){}
+function load(){try{const t=localStorage.getItem(KEY);if(t){S=Object.assign(structuredClone(DEFAULT),JSON.parse(t));migrate();return}}catch(e){} S=structuredClone(DEFAULT)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=id=>document.getElementById(id);
 const sg=n=>(n>=0?'+':'−')+Math.abs(n);
 const rnd=s=>1+Math.floor(Math.random()*s);
@@ -253,8 +253,11 @@ const SITS=[
   {k:'charge',t:'Sturmangriff',h:'+2, ein Angriff',melee:true},
   {k:'bless',t:'Segnung / Moral',h:'+1'},
   {k:'haste',t:'Hast',h:'+1, bei Waffen ein Angriff mehr'},
-  {k:'prone',t:'Ich liege',h:'−4 Nahkampf',melee:true}
+  {k:'prone',t:'Ich liege',h:'−4 Nahkampf',melee:true},
+  {k:'evil',t:'Dämonische / böse Gegner',h:'−2 Angriff, +2 Schaden'}
 ];
+const EVIL={'Initiative':2,'Zähigkeit':2,'Heimlichkeit':-2,'Diplomatie':-4};
+const chkB=c=>(+c.b)+((S.sits.evil&&EVIL[c.name])||0);
 function weapon(){return S.weapons[S.weapon]||S.weapons[0]}
 function effWeapon(w){const e=Object.assign({},w);if(w.leg&&S.leg>0){const L=LEG[S.leg];e.enh=L.enh;e.critLow=Math.min(w.critLow,L.crit)}return e}
 function avail(o,w){if(o.melee&&w.ranged)return false;if(o.ranged&&!w.ranged)return false;return true}
@@ -271,10 +274,11 @@ function compute(){
   if(on('bless'))add(1,'Moral');
   if(on('haste'))add(1,'Hast');
   if(on('prone'))add(-4,'liegend');
+  if(on('evil'))add(-2,'gegen Böse (GAB −2)');
   const x=+$('xAtk').value||0;add(x,'Sonstiges');
   const base=mods.reduce((a,b)=>a+b[0],0);
   let dm=[];const addD=(v,t)=>{if(v)dm.push([v,t])};
-  addD(Math.floor(S.st*w.strMul),'Stärke');addD(w.rays?0:w.enh,'Verbesserung');addD(w.flat||0,'fest');addD(+$('xDmg').value||0,'Sonstiges');
+  addD(Math.floor(S.st*w.strMul),'Stärke');addD(w.rays?0:w.enh,'Verbesserung');addD(w.flat||0,'fest');if(on('evil'))addD(2,'gegen Böse');addD(+$('xDmg').value||0,'Sonstiges');
   const stat=dm.reduce((a,b)=>a+b[0],0);
   const type=w.energy?S.energy:'';
   let list=[];let hints=[];
@@ -310,7 +314,7 @@ function renderAttack(){
   const box=$('sits');box.querySelectorAll('.chip').forEach(c=>c.remove());
   SITS.forEach(o=>{if(!avail(o,w))return;if(o.k==='charge'&&w.rays)return;
     const b=document.createElement('button');b.type='button';b.className='chip';b.setAttribute('aria-pressed',!!S.sits[o.k]);
-    b.innerHTML=esc(o.t)+'<small>'+esc(o.h)+'</small>';b.onclick=()=>{S.sits[o.k]=!S.sits[o.k];save();renderAttack()};box.appendChild(b)});
+    b.innerHTML=esc(o.t)+'<small>'+esc(o.h)+'</small>';b.onclick=()=>{S.sits[o.k]=!S.sits[o.k];save();renderAttack();if(o.k==='evil')renderChecks()};box.appendChild(b)});
   const {list,hints}=compute();
   const H=$('hints');H.innerHTML='';hints.forEach(t=>{const p=document.createElement('p');p.className='note';p.textContent=t;H.appendChild(p)});
   const A=$('attacks');A.innerHTML='';
@@ -359,9 +363,9 @@ function renderSlots(){
 }
 function renderChecks(){
   const C=$('checks');C.innerHTML='';
-  S.checks.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='check';b.innerHTML='<span>'+esc(c.name)+'</span><span class="num">'+sg(+c.b)+'</span>';
-    b.onclick=()=>{const d=rnd(20);let t=d+(+c.b);const el=document.createElement('div');el.className='res';
-      const h=()=>'<div class="head"><span><b>'+esc(c.name)+'</b> · W20 = '+d+' '+sg(+c.b)+'</span><span class="total">'+t+'</span></div>';
+  S.checks.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='check';const cb=chkB(c),dif=cb!==(+c.b);b.innerHTML='<span>'+esc(c.name)+(dif?' <small class="mut">(gegen Böse)</small>':'')+'</span><span class="num">'+sg(cb)+'</span>';
+    b.onclick=()=>{const d=rnd(20);let t=d+cb;const el=document.createElement('div');el.className='res';
+      const h=()=>'<div class="head"><span><b>'+esc(c.name)+'</b> · W20 = '+d+' '+sg(cb)+(dif?' (gegen Böse)':'')+'</span><span class="total">'+t+'</span></div>';
       el.innerHTML=h();el.appendChild(surgeBtn(r=>{t+=r;el.innerHTML=h()+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+t+'</b></div>'}));addResult('chkLog',el)};C.appendChild(b)})
 }
 function spendCard(title,meta,text,cost,msg){

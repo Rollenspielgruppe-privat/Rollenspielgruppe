@@ -141,7 +141,7 @@ td input,td select{padding:4px 6px}
   <details id="settings">
     <summary>Werte bearbeiten</summary>
     <div class="form">
-      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg einfach anpassen. Die Werte gelten, bis die Seite neu geladen wird. Zum Aufheben unten „Werte kopieren“ tippen und den Text sichern; später einfügen und „Laden“ tippen.</p>
+      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg einfach anpassen. Alles wird nur auf diesem Gerät in diesem Browser gespeichert, nichts wird übertragen. Für ein anderes Gerät unten „Werte kopieren“ nutzen.</p>
       <div class="fields">
         <label class="f">Name<input id="sName"></label>
         <label class="f">Untertitel<input id="sSub"></label>
@@ -228,8 +228,8 @@ const DEFAULT={
 const LEG=[null,{enh:1,crit:19},{enh:2,crit:18},{enh:3,crit:18}];
 let S;
 function migrate(){S.sits=Object.assign({},DEFAULT.sits,S.sits);S.weapons.forEach(w=>{if(w.twoHand===undefined)w.twoHand=!w.ranged});if(!S.grip)S.grip='one'}
-function load(){S=structuredClone(DEFAULT)}
-function save(){}
+function load(){try{const t=localStorage.getItem(KEY);if(t){S=Object.assign(structuredClone(DEFAULT),JSON.parse(t));migrate();return}}catch(e){} S=structuredClone(DEFAULT)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
 const $=id=>document.getElementById(id);
 const sg=n=>(n>=0?'+':'−')+Math.abs(n);
 const rnd=s=>1+Math.floor(Math.random()*s);
