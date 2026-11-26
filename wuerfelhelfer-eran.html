@@ -254,7 +254,7 @@ const SITS=[
   {k:'bless',t:'Segnung / Moral',h:'+1'},
   {k:'haste',t:'Hast',h:'+1, bei Waffen ein Angriff mehr'},
   {k:'prone',t:'Ich liege',h:'−4 Nahkampf',melee:true},
-  {k:'evil',t:'Dämonische / böse Gegner',h:'−2 Angriff, +2 Schaden'}
+  {k:'evil',t:'Dämonische / böse Gegner',h:'−2 Angriff, +2 Waffenschaden'}
 ];
 const EVIL={'Initiative':2,'Zähigkeit':2,'Heimlichkeit':-2,'Diplomatie':-4};
 const chkB=c=>(+c.b)+((S.sits.evil&&EVIL[c.name])||0);
@@ -278,7 +278,7 @@ function compute(){
   const x=+$('xAtk').value||0;add(x,'Sonstiges');
   const base=mods.reduce((a,b)=>a+b[0],0);
   let dm=[];const addD=(v,t)=>{if(v)dm.push([v,t])};
-  addD(Math.floor(S.st*w.strMul),'Stärke');addD(w.rays?0:w.enh,'Verbesserung');addD(w.flat||0,'fest');if(on('evil'))addD(2,'gegen Böse');addD(+$('xDmg').value||0,'Sonstiges');
+  addD(Math.floor(S.st*w.strMul),'Stärke');addD(w.rays?0:w.enh,'Verbesserung');addD(w.flat||0,'fest');if(on('evil')&&!w.rays)addD(2,'gegen Böse');addD(+$('xDmg').value||0,'Sonstiges');
   const stat=dm.reduce((a,b)=>a+b[0],0);
   const type=w.energy?S.energy:'';
   let list=[];let hints=[];
