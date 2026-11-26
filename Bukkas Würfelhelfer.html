@@ -1,0 +1,418 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Bukkas Würfelhelfer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral+SC:wght@600;700&family=Alegreya+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: eine Spalte wie ein Spielblock am Tisch; oben die Kraftleiste, darunter Angriff, Proben, Fähigkeiten, Werte */
+:root{
+  --bg:#EDEFEA; --panel:#FAFBF8; --ink:#1B2230; --muted:#5B6474; --line:#C9CEC6;
+  --accent:#2C5B86; --accent-ink:#FFFFFF; --brass:#9A6E1C; --chip:#E1E6DF;
+  --good:#2E7A4B; --warn:#A8461F; --crit:#7A2E8C;
+  --f-display:"Spectral SC", Georgia, serif;
+  --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#7FB2E0; --accent-ink:#0F1520; --brass:#D9AE5C; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --crit:#CF8BE0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#7FB2E0; --accent-ink:#0F1520; --brass:#D9AE5C; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --crit:#CF8BE0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+h1,h2{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance}
+h1{font-size:1.6rem;letter-spacing:.01em}
+h2{font-size:1.15rem;letter-spacing:.02em}
+.sub{color:var(--muted);font-size:.92rem}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+section,.top{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px}
+.top{grid-template-columns:1fr auto;align-items:center}
+.lk{display:grid;gap:6px;justify-items:end}
+.lk .label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.pips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pip{width:22px;height:22px;border-radius:50%;border:2px solid var(--brass);background:var(--brass);cursor:pointer;padding:0}
+.pip.used{background:transparent}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);width:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+.seg button,.chip{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:7px 13px;font-size:.95rem}
+.seg button[aria-pressed="true"],.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip small{opacity:.8;margin-left:4px;font-family:var(--f-num);font-size:.8rem}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:8px 14px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:5px 10px;font-size:.88rem}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.atk{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.atk:first-child{border-top:none}
+.atk .big{font-family:var(--f-num);font-size:1.5rem;font-weight:700;color:var(--accent);min-width:3.2ch}
+.atk .dmg{font-family:var(--f-num);font-size:1rem}
+.why{grid-column:1/-1;font-size:.85rem;color:var(--muted)}
+.sneak{color:var(--crit);font-weight:700}
+.log{display:grid;gap:8px}
+.res{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;background:var(--bg)}
+.res .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.res .total{font-family:var(--f-num);font-size:1.3rem;font-weight:700}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin-left:6px}
+.tag.crit{color:var(--crit)} .tag.nat1{color:var(--warn)} .tag.surge{color:var(--brass)}
+.mut{font-size:.86rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.check{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--chip)}
+.check .num{font-weight:700}
+.ability{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:6px}
+.ability .head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+summary{font-family:var(--f-display);font-weight:700;font-size:1.1rem;cursor:pointer}
+.form{display:grid;gap:12px;margin-top:12px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+label.f{display:grid;gap:3px;font-size:.82rem;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0}
+textarea{font-family:var(--f-num);font-size:.8rem;min-height:90px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left;vertical-align:middle}
+th{font-weight:500;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+td input,td select{padding:4px 6px}
+.note{font-size:.85rem;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.9rem}
+@media (prefers-reduced-motion:no-preference){.res{animation:pop .18s ease-out}@keyframes pop{from{transform:translateY(-3px)}to{transform:none}}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="hName">Bukka Schwarzfeder</h1>
+      <div class="sub" id="hSub">Tengu · Attentäter (Klippenmörder) 6 · Wächter 1</div>
+    </div>
+    <div class="lk">
+      <span class="label">Legendäre Kraft</span>
+      <div class="pips" id="pips"></div>
+      <button class="btn ghost small" id="rest" type="button">Rast: alles auffüllen</button>
+    </div>
+  </header>
+
+  <section aria-labelledby="t-atk">
+    <h2 id="t-atk">Angriff</h2>
+    <div class="row seg" id="weapons" role="group" aria-label="Waffe"></div>
+    <div class="row seg" id="mode" role="group" aria-label="Art des Angriffs">
+      <button type="button" data-mode="single" aria-pressed="false">Ein Angriff</button>
+      <button type="button" data-mode="full" aria-pressed="true">Voller Angriff</button>
+    </div>
+    <div class="row" id="sits"><span class="lbl">Was trifft gerade zu?</span></div>
+    <div class="row">
+      <label class="f" style="width:9rem">Sonstiges Angriff<input id="xAtk" type="number" value="0" inputmode="numeric"></label>
+      <label class="f" style="width:9rem">Sonstiges Schaden<input id="xDmg" type="number" value="0" inputmode="numeric"></label>
+    </div>
+    <div id="attacks"></div>
+    <div class="row"><button class="btn" id="rollAll" type="button">Alle Angriffe würfeln</button></div>
+    <div class="log" id="atkLog" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t-chk">
+    <h2 id="t-chk">Proben und Rettungswürfe</h2>
+    <div class="grid2" id="checks"></div>
+    <div class="log" id="chkLog" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t-ab">
+    <h2 id="t-ab">Fähigkeiten</h2>
+    <div id="abilities" style="display:grid;gap:8px"></div>
+  </section>
+
+  <details id="settings">
+    <summary>Werte bearbeiten</summary>
+    <div class="form">
+      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg oder für einen anderen Charakter einfach anpassen. Alles wird auf diesem Gerät gespeichert.</p>
+      <div class="fields">
+        <label class="f">Name<input id="sName"></label>
+        <label class="f">Untertitel<input id="sSub"></label>
+        <label class="f">Grund-Angriffsbonus<input id="sGab" type="number"></label>
+        <label class="f">Stärke-Modifikator<input id="sSt" type="number"></label>
+        <label class="f">Geschicklichkeit-Mod.<input id="sGe" type="number"></label>
+        <label class="f">Hinterhältiger Angriff (W6)<input id="sSneak" type="number"></label>
+        <label class="f">Legendäre Kraft pro Tag<input id="sLk" type="number"></label>
+        <label class="f">Legendenstufe<input id="sTier" type="number"></label>
+        <label class="f">Waffenfokus-Bonus (Bastardschwert)<input id="sWf" type="number"></label>
+        <label class="f">Schubwürfel (Seiten)<input id="sSurge" type="number"></label>
+        <label class="f">Charakterstufe<input id="sLvl" type="number"></label>
+        <label class="f">Krähenbruder der Wunde (Klassenstufe)<input id="sKb" type="number" min="0" max="10"></label>
+        <label class="f">Stufe des Firstmessers
+          <select id="sLeg"><option value="0">noch nicht erhalten</option><option value="1">1 · Aktiviert</option><option value="2">2 · Erwacht</option><option value="3">3 · Entfaltet</option><option value="4">4 · Legendär</option></select></label>
+      </div>
+      <div>
+        <div class="lbl">Waffen</div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Name</th><th>Attribut</th><th>Würfel</th><th>Stärke ×</th><th>Kritisch ab</th><th>×</th><th>Verbess.</th><th>Fernkampf</th><th>Klaue dazu</th><th>Legendär</th><th></th></tr></thead>
+          <tbody id="wTable"></tbody>
+        </table></div>
+        <button class="btn ghost small" id="addW" type="button">Waffe hinzufügen</button>
+        <p class="note">„Legendär“ bedeutet: Die Stufe der Legendenwaffe setzt Verbesserung und Bedrohungsbereich automatisch (Firstmesser: +2/+3/+4/+5, kritisch ab 19/18/18/17). Der Bastardschwert-Grundwert bleibt: 1W10, 19–20/×2, einhändig nach Hausregel.</p>
+        <p class="note">„Krähenbruder der Wunde“ bleibt auf 0, bis Bukka die Prestigeklasse nimmt (Voraussetzung u. a. Hinterhältiger Angriff +3W6). Ab 1 erscheinen Krähengestalt, Vors Bund und Wundflüstern. GAB, Rettungswürfe und Charakterstufe beim Aufstieg bitte selbst anpassen.</p>
+      </div>
+      <div>
+        <div class="lbl">Proben</div>
+        <div id="cTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addC" type="button">Probe hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Fähigkeiten mit begrenzten Einsätzen</div>
+        <div id="aTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addA" type="button">Fähigkeit hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Sichern und übertragen</div>
+        <p class="note">Kopiere den Text, um die Werte auf ein anderes Gerät zu bringen oder aufzuheben. Zum Laden den Text einfügen und „Laden“ tippen.</p>
+        <textarea id="io" aria-label="Gesicherte Werte"></textarea>
+        <div class="row">
+          <button class="btn small" id="exp" type="button">Werte kopieren</button>
+          <button class="btn ghost small" id="imp" type="button">Laden</button>
+          <button class="btn ghost small" id="reset" type="button">Auf Bukka zurücksetzen</button>
+        </div>
+      </div>
+    </div>
+  </details>
+  <p class="note" style="text-align:center">Würfelhelfer für Pathfinder 1. Die Spielleitung hat das letzte Wort.</p>
+</div>
+
+<script>
+const KEY='bukka-wuerfelhelfer-v2', OLDKEY='bukka-wuerfelhelfer-v1';
+const DEFAULT={
+  name:'Bukka Schwarzfeder', sub:'Tengu · Attentäter (Klippenmörder) 6 · Wächter 1',
+  gab:6, st:3, ge:3, sneak:2, wf:2, lkMax:5, tier:1, surge:6, leg:1, lvl:6, kb:0,
+  fu:{deck:0,vdeck:0,vdist:0}, crowUsed:0, crowPick:'Klauen', fp:0,
+  weapons:[
+    {name:'Firstmesser einhändig',ab:'st',dice:'1W10',strMul:1,critLow:19,critMul:2,enh:0,ranged:false,claw:true,leg:true,focus:true},
+    {name:'Firstmesser zweihändig',ab:'st',dice:'1W10',strMul:1.5,critLow:19,critMul:2,enh:0,ranged:false,claw:false,leg:true,focus:true},
+    {name:'Langbogen',ab:'ge',dice:'1W8',strMul:0,critLow:20,critMul:3,enh:0,ranged:true,claw:false,leg:false},
+    {name:'Nur Klauen',ab:'st',dice:'1W3',strMul:1,critLow:20,critMul:2,enh:0,ranged:false,claw:false,leg:false,natural:2}
+  ],
+  checks:[
+    {name:'Initiative',b:3},{name:'Reflex',b:8},{name:'Wille',b:3},{name:'Zähigkeit',b:7},
+    {name:'Akrobatik',b:11},{name:'Heimlichkeit',b:11},{name:'Wahrnehmung',b:10},{name:'Klettern',b:9},
+    {name:'Mechanismus ausschalten',b:9},{name:'Fliegen',b:8},{name:'Motiv erkennen',b:6},{name:'KMB (Manöver)',b:9}
+  ],
+  abilities:[
+    {name:'Tenguschwingen',max:1,per:'Tag',used:0,text:'Fliegen 9 m für 6 Minuten.'}
+  ],
+  sits:{wfp:false,flank:false,flat:false,high:false,charge:false,bless:false,haste:false,prone:false,near:true,claw:true,vorSight:false,vor:false,crow:false},
+  weapon:0, mode:'full', lkUsed:0
+};
+const LEG=[null,{enh:2,crit:19},{enh:3,crit:18},{enh:4,crit:18},{enh:5,crit:17}];
+let S;
+function load(){try{let t=localStorage.getItem(KEY),old=false;if(!t){t=localStorage.getItem(OLDKEY);old=!!t}
+  if(t){S=Object.assign(structuredClone(DEFAULT),JSON.parse(t));S.sits=Object.assign({},DEFAULT.sits,S.sits);S.fu=Object.assign({},DEFAULT.fu,S.fu);
+    S.weapons.forEach(w=>{if(w.focus===undefined&&/Bastardschwert|Firstmesser/.test(w.name))w.focus=true;if(old)w.name=w.name.replace('Bastardschwert','Firstmesser')});
+    if(old){S.leg=Math.max(S.leg||0,1);save()}return}}catch(e){} S=structuredClone(DEFAULT)}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const sg=n=>(n>=0?'+':'−')+Math.abs(n);
+const rnd=s=>1+Math.floor(Math.random()*s);
+function parseDice(t){const m=String(t).toUpperCase().replace('D','W').match(/(\d*)W(\d+)/);return m?{n:+(m[1]||1),s:+m[2]}:{n:1,s:6}}
+function rollDice(n,s){let a=[];for(let i=0;i<n;i++)a.push(rnd(s));return a}
+let toastT;function toast(m){let el=document.querySelector('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800)}
+
+const SITS=[
+  {k:'wfp',t:'Waffenfokus-Kraft',h:'1 Kraft, schnelle Aktion',focusOnly:true},
+  {k:'flank',t:'In der Zange',h:'+2 Angriff, Hinterhältig',melee:true},
+  {k:'flat',t:'Gegner auf dem falschen Fuß',h:'Hinterhältig'},
+  {k:'high',t:'Von oben (3 m)',h:'+2/+2'},
+  {k:'charge',t:'Sturmangriff',h:'+2, ein Angriff',melee:true},
+  {k:'bless',t:'Segnung / Moral',h:'+1'},
+  {k:'haste',t:'Hast',h:'+1, ein Angriff mehr'},
+  {k:'prone',t:'Ich liege',h:'−4',melee:true},
+  {k:'near',t:'Ziel bis 9 m',h:'für Hinterhältig',ranged:true},
+  {k:'claw',t:'Klaue dazu',h:'freie Hand',clawOnly:true},
+  {k:'vorSight',t:'Vor in Sicht',h:'für Zwei Schwingen',legOnly:true},
+  {k:'vor',t:'Vor lenkt ab',h:'Hinterhältig, 1/Tag',legOnly:true,vorOnly:true,melee:true},
+  {k:'crow',t:'Krähengestalt',h:'+2 GE',kbOnly:true}
+];
+
+function weapon(){return S.weapons[S.weapon]||S.weapons[0]}
+function effWeapon(w){const e=Object.assign({},w);if(w.leg&&S.leg>0){e.enh=LEG[S.leg].enh;e.critLow=Math.min(w.critLow,LEG[S.leg].crit)}return e}
+
+function compute(){
+  const w=effWeapon(weapon());const s=S.sits;const melee=!w.ranged;
+  const geEff=S.ge+(S.sits.crow&&S.kb>0?1:0);const abil=w.ab==='ge'?geEff:S.st;
+  let mods=[];const add=(v,t)=>{if(v)mods.push([v,t])};
+  add(S.gab,'Grund-Angriffsbonus');add(abil,w.ab==='ge'?'Geschicklichkeit':'Stärke');add(w.enh,'Verbesserung');
+  if(w.focus)add(S.wf||0,'Waffenfokus (legendär)');
+  const wfp=Math.floor(S.tier/2);if(w.focus&&s.wfp&&wfp>0)add(wfp,'Waffenfokus-Kraft');
+  if(s.flank&&melee)add(2,'Zange');
+  if(s.high)add(2,'von oben');
+  if(s.charge&&melee)add(2,'Sturmangriff');
+  if(s.bless)add(1,'Moral');
+  if(s.haste)add(1,'Hast');
+  if(s.prone&&melee)add(-4,'liegend');
+  const x=+$('xAtk').value||0;add(x,'Sonstiges');
+  const base=mods.reduce((a,b)=>a+b[0],0);
+  const strD=Math.floor(S.st*w.strMul);
+  let dm=[];const addD=(v,t)=>{if(v)dm.push([v,t])};
+  addD(strD,'Stärke');addD(w.enh,'Verbesserung');if(s.high)addD(2,'von oben');addD(+$('xDmg').value||0,'Sonstiges');
+  const dmgStatic=dm.reduce((a,b)=>a+b[0],0);
+  const vorDist=s.vor&&s.vorSight&&S.leg>0&&melee;
+  const sneakOk=(s.flat||(s.flank&&melee)||vorDist)&&(melee||s.near)&&S.sneak>0;
+  let list=[];
+  const single=S.mode==='single'||(s.charge&&melee);
+  if(w.natural){
+    const n=single?1:w.natural;
+    for(let i=0;i<n;i++)list.push({label:'Klaue '+(i+1),bonus:base,why:mods,dice:w.dice,stat:dmgStatic,dWhy:dm,critLow:w.critLow,critMul:w.critMul});
+  }else{
+    let iters=[0];if(!single){for(let g=S.gab-5;g>0;g-=5)iters.push(S.gab-g)}
+    if(!single&&s.haste)iters.splice(1,0,0);
+    iters.forEach((pen,i)=>list.push({label:(i+1)+'. Angriff',bonus:base-pen,pen,why:mods,dice:w.dice,stat:dmgStatic,dWhy:dm,critLow:w.critLow,critMul:w.critMul}));
+    if(!single&&w.claw&&s.claw&&!w.ranged){
+      const cb=S.gab+S.st-5+(s.flank?2:0)+(s.high?2:0)+(s.bless?1:0)+(s.haste?1:0)+(s.prone?-4:0)+x;
+      const cs=Math.floor(S.st/2)+(s.high?2:0)+(+$('xDmg').value||0);
+      let cw=[[S.gab,'Grund-Angriffsbonus'],[S.st,'Stärke'],[-5,'Klaue neben Waffe']];if(s.flank)cw.push([2,'Zange']);if(s.high)cw.push([2,'von oben']);if(s.bless)cw.push([1,'Moral']);if(s.haste)cw.push([1,'Hast']);if(s.prone)cw.push([-4,'liegend']);if(x)cw.push([x,'Sonstiges']);
+      list.push({label:'Klaue',bonus:cb,why:cw,dice:'1W3',stat:cs,dWhy:[[Math.floor(S.st/2),'halbe Stärke']].concat(s.high?[[2,'von oben']]:[]),critLow:20,critMul:2});
+    }
+  }
+  return {list,sneakOk,w};
+}
+const whyText=(arr,pen)=>arr.map(([v,t])=>sg(v)+' '+t).join(' · ')+(pen?' · −'+pen+' Folgeangriff':'');
+
+function renderTop(){
+  $('hName').textContent=S.name;$('hSub').textContent=S.sub+(S.kb>0?' · Krähenbruder der Wunde '+S.kb:'');
+  const p=$('pips');p.innerHTML='';
+  for(let i=0;i<S.lkMax;i++){const b=document.createElement('button');b.type='button';b.className='pip'+(i<S.lkUsed?' used':'');
+    b.setAttribute('aria-label',(i<S.lkUsed?'verbraucht':'verfügbar')+': Legendäre Kraft '+(i+1));
+    b.onclick=()=>{S.lkUsed=(i<S.lkUsed)?i:i+1;save();renderTop()};p.appendChild(b)}
+}
+function renderAttack(){
+  const W=$('weapons');W.innerHTML='';
+  S.weapons.forEach((w,i)=>{const b=document.createElement('button');b.type='button';b.textContent=w.name;b.setAttribute('aria-pressed',i===S.weapon);b.onclick=()=>{S.weapon=i;save();renderAttack()};W.appendChild(b)});
+  document.querySelectorAll('#mode button').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.mode===S.mode)});
+  const w=weapon();const box=$('sits');box.querySelectorAll('.chip').forEach(c=>c.remove());
+  SITS.forEach(o=>{
+    if(o.melee&&w.ranged)return; if(o.ranged&&!w.ranged)return; if(o.clawOnly&&!(w.claw&&S.mode==='full'))return; if(o.focusOnly&&!(w.focus&&Math.floor(S.tier/2)>0))return; if(o.legOnly&&!(S.leg>0))return; if(o.vorOnly&&!S.sits.vorSight)return; if(o.kbOnly&&!(S.kb>0))return;
+    const b=document.createElement('button');b.type='button';b.className='chip';b.setAttribute('aria-pressed',!!S.sits[o.k]);
+    b.innerHTML=o.t+'<small>'+o.h+'</small>';b.onclick=()=>{S.sits[o.k]=!S.sits[o.k];if(o.k==='vorSight'&&!S.sits.vorSight)S.sits.vor=false;save();renderAttack();renderAbilities()};box.appendChild(b)});
+  const {list,sneakOk}=compute();const A=$('attacks');A.innerHTML='';
+  list.forEach((a,i)=>{
+    const d=document.createElement('div');d.className='atk';
+    const crit=a.critLow<20?a.critLow+'–20':'20';
+    d.innerHTML='<div class="big">'+sg(a.bonus)+'</div><div><div><b>'+a.label+'</b></div><div class="dmg">'+a.dice+(a.stat?sg(a.stat):'')+(sneakOk?' <span class="sneak">+'+S.sneak+'W6</span>':'')+' <span class="mut">· kritisch '+crit+'/×'+a.critMul+'</span></div></div>';
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Würfeln';b.onclick=()=>rollAttack(a,sneakOk);d.appendChild(b);
+    const y=document.createElement('div');y.className='why';y.textContent='Angriff: '+whyText(a.why,a.pen)+'. Schaden: '+a.dice+(a.dWhy.length?' '+whyText(a.dWhy):'')+(sneakOk?' · Hinterhältiger Angriff '+S.sneak+'W6':'');
+    d.appendChild(y);A.appendChild(d)});
+  if(S.sits.charge&&!w.ranged&&S.mode==='full'){const n=document.createElement('p');n.className='note';n.textContent='Beim Sturmangriff gibt es nur einen Angriff. Danach hat Bukka bis zu seinem nächsten Zug −2 auf die RK.';A.appendChild(n)}
+  if(!sneakOk&&!w.ranged&&S.sneak>0){const n=document.createElement('p');n.className='note';n.textContent='Kein Hinterhältiger Angriff: Dafür braucht es die Zange, einen Gegner auf dem falschen Fuß'+(S.leg>0?' oder Vor, die ablenkt (nur wenn Vor in Sicht ist)':'')+'.';A.appendChild(n)}
+}
+function addResult(logId,node){const L=$(logId);L.prepend(node);while(L.children.length>6)L.lastChild.remove()}
+function surgeBtn(onSurge){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent='Legendärer Schub +1W'+S.surge+' (1 Kraft)';
+  b.onclick=()=>{if(S.lkUsed>=S.lkMax){toast('Keine Legendäre Kraft mehr übrig');return}S.lkUsed++;save();renderTop();const r=rnd(S.surge);b.remove();onSurge(r)};return b}
+function rollAttack(a,sneakOk){
+  const d20=rnd(20);const threat=d20>=a.critLow;
+  const el=document.createElement('div');el.className='res';
+  let total=d20+a.bonus;
+  const dd=parseDice(a.dice);
+  const wDice=rollDice(dd.n,dd.s);const sDice=sneakOk?rollDice(S.sneak,6):[];
+  const sum=x=>x.reduce((p,q)=>p+q,0);
+  const normal=sum(wDice)+a.stat+sum(sDice);
+  let critTxt='';
+  if(threat){const extra=[];for(let k=1;k<a.critMul;k++)extra.push(...rollDice(dd.n,dd.s));const conf=rnd(20)+a.bonus;
+    const critDmg=sum(wDice)+sum(extra)+a.stat*a.critMul+sum(sDice);
+    critTxt='<div><span class="tag crit">Bedrohung</span> Bestätigungswurf: <b class="num">'+conf+'</b>. Trifft er die RK, ist es ein kritischer Treffer: <b class="num">'+critDmg+'</b> Schaden statt '+normal+'.</div>'}
+  const head=()=> '<div class="head"><span><b>'+a.label+'</b> · W20 = '+d20+(d20===20?' <span class="tag crit">natürliche 20</span>':'')+(d20===1?' <span class="tag nat1">natürliche 1: verfehlt</span>':'')+'</span><span class="total">'+total+'</span></div>';
+  const body='<div>Schaden: <b class="num">'+normal+'</b> <span class="mut">('+a.dice+' = '+wDice.join('+')+(a.stat?', '+sg(a.stat):'')+(sneakOk?', Hinterhältig '+sDice.join('+'):'')+')</span></div>'+critTxt;
+  el.innerHTML=head()+body;
+  if(d20!==20&&d20!==1)el.appendChild(surgeBtn(r=>{total+=r;el.innerHTML=head()+body+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+total+'</b></div>'}));
+  addResult('atkLog',el);
+}
+function renderChecks(){
+  const C=$('checks');C.innerHTML='';
+  S.checks.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='check';b.innerHTML='<span>'+c.name+'</span><span class="num">'+sg(+c.b)+'</span>';
+    b.onclick=()=>{const d=rnd(20);let t=d+(+c.b);const el=document.createElement('div');el.className='res';
+      const h=()=>'<div class="head"><span><b>'+c.name+'</b> · W20 = '+d+' '+sg(+c.b)+'</span><span class="total">'+t+'</span></div>';
+      el.innerHTML=h();el.appendChild(surgeBtn(r=>{t+=r;el.innerHTML=h()+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+t+'</b></div>'}));addResult('chkLog',el)};C.appendChild(b)})
+}
+function renderAbilities(){
+  const A=$('abilities');A.innerHTML='';
+  const card=(title,meta,text,cost,msg)=>{const d=document.createElement('div');d.className='ability';
+    d.innerHTML='<div class="head"><b>'+title+'</b><span class="mut">'+meta+'</span></div><div class="mut">'+text+'</div>';
+    if(cost){const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Einsetzen';b.onclick=()=>{if(S.lkUsed+cost>S.lkMax){toast('Keine Legendäre Kraft mehr übrig');return}S.lkUsed+=cost;save();renderTop();toast(msg)};d.querySelector('.head').appendChild(b)}
+    A.appendChild(d)};
+  card('Schlag abfangen (Wächter-Ruf)','Sofortaktion · 1 Legendäre Kraft','Wenn Bukka Schaden aus <b>einer</b> Quelle nimmt (ein Treffer, ein Feuerball): Der Schaden sinkt um <b>'+(5*S.tier)+'</b> (5 je Legendenstufe), höchstens auf 0. Je 10 verhinderte Punkte: 1 Minute lang SR 1/episch und Resistenz 5 gegen Säure, Kälte, Elektrizität, Feuer und Schall.',1,'Schlag abgefangen: −'+(5*S.tier)+' Schaden');
+  card('Feuer auf mich ziehen','Sofortaktion · oder 1 Legendäre Kraft ohne Aktion','Wird ein Verbündeter im Umkreis von 9 m mit einem Fernkampfangriff angegriffen, richtet sich der Angriff stattdessen gegen Bukka, auch wenn er eigentlich außer Reichweite wäre. Ohne Kraft kostet es die Sofortaktion der Runde.',0,'');
+  const fbtn=document.createElement('button');fbtn.type='button';fbtn.className='btn ghost small';fbtn.textContent='Ohne Aktion: 1 Kraft';fbtn.onclick=()=>{if(S.lkUsed>=S.lkMax){toast('Keine Legendäre Kraft mehr übrig');return}S.lkUsed++;save();renderTop();toast('Feuer auf mich gezogen')};
+  A.lastChild.querySelector('.head').appendChild(fbtn);
+  const wfp=Math.floor(S.tier/2);
+  card('Waffenfokus (legendär)','Bastardschwert','Schon eingerechnet: Waffenfokus zählt doppelt (+'+(S.wf||0)+' statt +1). Zusätzlich: schnelle Aktion, 1 Legendäre Kraft = +halbe Legendenstufe auf Angriffe bis Zugende. '+(wfp>0?'Das sind gerade +'+wfp+': im Angriffsbereich „Waffenfokus-Kraft“ antippen.':'Bei Legendenstufe 1 sind das +0, die Kraft lohnt sich erst ab Legendenstufe 2.'),0,'');
+  if(S.leg>0){
+    const lv=S.leg, vs=!!S.sits.vorSight;
+    const use=(title,meta,text,key,max,msg,need)=>{const d=document.createElement('div');d.className='ability';
+      const left=max-(S.fu[key]||0);
+      d.innerHTML='<div class="head"><b>'+title+'</b><span class="mut">'+meta+' · '+left+' von '+max+' übrig</span></div><div class="mut">'+text+'</div>';
+      const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Einsetzen';
+      b.disabled=left<=0||(need&&!vs);
+      b.onclick=()=>{S.fu[key]=(S.fu[key]||0)+1;save();renderAbilities();toast(msg)};d.querySelector('.head').appendChild(b);A.appendChild(d)};
+    card('Firstmesser · Stufe '+lv,['','Aktiviert','Erwacht','Entfaltet','Legendär'][lv],'Bastardschwert +'+LEG[lv].enh+', unzerstörbar, kritisch ab '+LEG[lv].crit+' (schon in den Angriffen eingerechnet). Solange Bukka es trägt: +2 auf Beruf (Baumeister) und Beruf (Zimmermann). Inschrift: „Was du deckst, gehört dir nicht. Es gehört denen, die darunter schlafen.“',0,'');
+    use('Deckung','Reaktion · 1/Rast','Lenkt einen Angriff auf einen benachbarten Verbündeten auf Bukka. Gegen diesen Angriff erhält er Schadensreduzierung 5/–.','deck',1,'Deckung: Angriff auf Bukka gelenkt, SR 5/–',false);
+    use('Zwei Schwingen · Deckung für Vor','1/Tag · nur mit Vor in Sicht','Bukka kann Deckung einmal am Tag zusätzlich für Vor einsetzen.','vdeck',1,'Deckung für Vor',true);
+    use('Zwei Schwingen · Vor lenkt ab','1/Tag · nur mit Vor in Sicht','Vor lenkt einen Gegner ab: Bukka erhält gegen ihn Hinterhältigen Angriff, als würde er flankieren. Im Angriffsbereich „Vor lenkt ab“ antippen.','vdist',1,'Vor lenkt ab: Hinterhältiger Angriff gegen das Ziel',true);
+    if(!vs){const n=document.createElement('p');n.className='note';n.textContent='Vor ist gerade nicht in Sicht. Zwei Schwingen ruht, bis sie da ist (im Angriffsbereich „Vor in Sicht“ antippen).';A.appendChild(n)}
+  }
+  if(S.kb>0){
+    const kb=S.kb, pool=S.lvl, left=Math.max(0,pool-S.crowUsed);
+    const picks=kb>=3?2:1;
+    const cf=document.createElement('div');cf.className='ability';
+    cf.innerHTML='<div class="head"><b>Krähengestalt</b><span class="mut">'+(kb>=7?'Bewegungsaktion':'Standardaktion')+' · noch '+left+' von '+pool+' Minuten heute</span></div><div class="mut">+2 GE, Fliegen 9 m ('+(kb>=3?'durchschnittlich':'schlecht')+'). Merkmale: '+picks+' wählen aus Klauen 2× '+(kb>=5?'1W6':'1W4')+', Dunkelsicht 18 m, natürliche Rüstung +'+(kb>=7?2:1)+'. Firstmesser kann geführt werden, keine Zauber mit verbaler Komponente, −4 auf Charisma-Würfe gegenüber Humanoiden ohne Bund. Zurückverwandeln: schnelle Aktion.</div>';
+    const m=document.createElement('button');m.type='button';m.className='btn small';m.textContent='1 Minute verbrauchen';m.disabled=left<=0;
+    m.onclick=()=>{S.crowUsed++;save();renderAbilities()};cf.querySelector('.head').appendChild(m);A.appendChild(cf);
+    card('Vors Bund','immer aktiv','Empathische Verbindung bis 1,5 km. Vor zählt als Tiergefährte mit effektiver Druidenstufe '+Math.min(S.lvl,kb+3)+' (Klassenstufe + 3, höchstens Charakterstufe). Stirbt Vor, ruhen alle Fähigkeiten dieser Klasse außer Krähenzunge.',0,'');
+    const fp=S.fp, stage=fp>=7?'Die Wunde ruft: Willenswurf SG '+(15+fp)+', sonst fliegt Bukka in der Nacht in die Weltenwunde.':fp>=5?'Wie bei 3, zusätzlich: nächste Verwandlung mit zufälligem Merkmal.':fp>=3?'Die Wunde flüstert: Moralprobe (Richt-SG '+(12+S.lvl)+'), bei Misslingen eine Last.':'Keine Folgen. Bukka hört die Krähen, nicht die Wunde.';
+    const w=document.createElement('div');w.className='ability';
+    w.innerHTML='<div class="head"><b>Wundflüstern</b><span class="mut num">'+fp+' Flüsterpunkte</span></div><div class="mut">'+stage+' Senken: vollendeter Bauabschnitt unter dem Banner (ab Stufe 8) −1 · Nacht im Krähenhorst ohne Gestalt −1 (1/Woche) · Riftseherin oder Segen Iomedaes −1W3 (1/Monat). Die Spielleitung kann die Punkte auch verdeckt führen.</div>';
+    const plus=document.createElement('button');plus.type='button';plus.className='btn ghost small';plus.textContent='+1';plus.setAttribute('aria-label','Flüsterpunkt dazu');plus.onclick=()=>{S.fp++;save();renderAbilities()};
+    const minus=document.createElement('button');minus.type='button';minus.className='btn ghost small';minus.textContent='−1';minus.setAttribute('aria-label','Flüsterpunkt weg');minus.onclick=()=>{S.fp=Math.max(0,S.fp-1);save();renderAbilities()};
+    w.querySelector('.head').append(minus,plus);A.appendChild(w);
+  }
+  card('Immer aktiv','','Schutzring +2: +2 Ablenkung auf die RK, auch gegen Berührungsangriffe und auf dem falschen Fuß (schon in der RK auf dem Bogen eintragen).',0,'');
+  S.abilities.forEach((a,i)=>{const d=document.createElement('div');d.className='ability';
+    d.innerHTML='<div class="head"><b>'+a.name+'</b><span class="mut">'+(a.max-a.used)+' von '+a.max+' pro '+a.per+' übrig</span></div>'+(a.text?'<div class="mut">'+a.text+'</div>':'');
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Einsetzen';b.disabled=a.used>=a.max;
+    b.onclick=()=>{a.used=Math.min(a.max,a.used+1);save();renderAbilities()};d.querySelector('.head').appendChild(b);A.appendChild(d)});
+  const hk=document.createElement('div');hk.className='ability';hk.innerHTML='<div class="head"><b>Schwer zu töten</b><span class="mut">immer aktiv</span></div><div class="mut">Unter 0 TP stabilisiert sich Bukka von selbst und stirbt erst bei minus doppelter Konstitution (−28 TP).</div>';A.appendChild(hk);
+}
+function renderSettings(){
+  $('sName').value=S.name;$('sSub').value=S.sub;$('sGab').value=S.gab;$('sSt').value=S.st;$('sGe').value=S.ge;$('sSneak').value=S.sneak;$('sLk').value=S.lkMax;$('sTier').value=S.tier;$('sWf').value=S.wf;$('sSurge').value=S.surge;$('sLeg').value=S.leg;$('sLvl').value=S.lvl;$('sKb').value=S.kb;
+  const T=$('wTable');T.innerHTML='';
+  S.weapons.forEach((w,i)=>{const tr=document.createElement('tr');
+    const inp=(k,type,val,attrs='')=>'<td><input data-w="'+i+'" data-k="'+k+'" type="'+type+'" value="'+val+'" '+attrs+'></td>';
+    tr.innerHTML=inp('name','text',w.name)+'<td><select data-w="'+i+'" data-k="ab"><option value="st"'+(w.ab==='st'?' selected':'')+'>ST</option><option value="ge"'+(w.ab==='ge'?' selected':'')+'>GE</option></select></td>'+inp('dice','text',w.dice,'style="width:5em"')+'<td><select data-w="'+i+'" data-k="strMul">'+[0,0.5,1,1.5].map(v=>'<option value="'+v+'"'+(w.strMul==v?' selected':'')+'>'+v+'</option>').join('')+'</select></td>'+inp('critLow','number',w.critLow)+inp('critMul','number',w.critMul)+inp('enh','number',w.enh)+'<td><input data-w="'+i+'" data-k="ranged" type="checkbox"'+(w.ranged?' checked':'')+'></td><td><input data-w="'+i+'" data-k="claw" type="checkbox"'+(w.claw?' checked':'')+'></td><td><input data-w="'+i+'" data-k="leg" type="checkbox"'+(w.leg?' checked':'')+'></td><td><button type="button" class="btn ghost small" data-del="'+i+'">Entfernen</button></td>';
+    T.appendChild(tr)});
+  T.querySelectorAll('input,select').forEach(el=>el.onchange=()=>{const w=S.weapons[+el.dataset.w];const k=el.dataset.k;
+    w[k]=el.type==='checkbox'?el.checked:(el.type==='number'||k==='strMul'?+el.value:el.value);save();renderAll(false)});
+  T.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{S.weapons.splice(+b.dataset.del,1);if(S.weapon>=S.weapons.length)S.weapon=0;save();renderAll()});
+  const C=$('cTable');C.innerHTML='';
+  S.checks.forEach((c,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:1 1 10rem" data-c="'+i+'" data-k="name" value="'+c.name+'" aria-label="Name der Probe"><input style="width:5rem" type="number" data-c="'+i+'" data-k="b" value="'+c.b+'" aria-label="Bonus"><button type="button" class="btn ghost small" data-cdel="'+i+'">Entfernen</button>';C.appendChild(r)});
+  C.querySelectorAll('input').forEach(el=>el.onchange=()=>{S.checks[+el.dataset.c][el.dataset.k]=el.dataset.k==='b'?+el.value:el.value;save();renderChecks()});
+  C.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{S.checks.splice(+b.dataset.cdel,1);save();renderAll()});
+  const A=$('aTable');A.innerHTML='';
+  S.abilities.forEach((a,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:1 1 9rem" data-a="'+i+'" data-k="name" value="'+a.name+'" aria-label="Name"><input style="width:4.5rem" type="number" data-a="'+i+'" data-k="max" value="'+a.max+'" aria-label="Einsätze"><select style="width:6rem" data-a="'+i+'" data-k="per" aria-label="pro"><option'+(a.per==='Tag'?' selected':'')+'>Tag</option><option'+(a.per==='Rast'?' selected':'')+'>Rast</option></select><input style="flex:2 1 12rem" data-a="'+i+'" data-k="text" value="'+(a.text||'')+'" aria-label="Kurzbeschreibung"><button type="button" class="btn ghost small" data-adel="'+i+'">Entfernen</button>';A.appendChild(r)});
+  A.querySelectorAll('input,select').forEach(el=>el.onchange=()=>{S.abilities[+el.dataset.a][el.dataset.k]=el.dataset.k==='max'?+el.value:el.value;save();renderAbilities()});
+  A.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{S.abilities.splice(+b.dataset.adel,1);save();renderAll()});
+}
+function renderAll(withSettings=true){renderTop();renderAttack();renderChecks();renderAbilities();if(withSettings)renderSettings()}
+
+[['sName','name',0],['sSub','sub',0],['sGab','gab',1],['sSt','st',1],['sGe','ge',1],['sSneak','sneak',1],['sLk','lkMax',1],['sTier','tier',1],['sWf','wf',1],['sSurge','surge',1],['sLeg','leg',1],['sLvl','lvl',1],['sKb','kb',1]].forEach(([id,k,n])=>{$(id).onchange=e=>{S[k]=n?+e.target.value:e.target.value;if(k==='lkMax')S.lkUsed=Math.min(S.lkUsed,S.lkMax);save();renderAll(false)}});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;save();renderAttack()});
+$('xAtk').oninput=renderAttack;$('xDmg').oninput=renderAttack;
+$('rollAll').onclick=()=>{const {list,sneakOk}=compute();[...list].reverse().forEach(a=>rollAttack(a,sneakOk))};
+$('rest').onclick=()=>{S.lkUsed=0;S.abilities.forEach(a=>a.used=0);S.fu={deck:0,vdeck:0,vdist:0};S.crowUsed=0;save();renderAll(false);toast('Ausgeruht: alles wieder voll')};
+$('addW').onclick=()=>{S.weapons.push({name:'Neue Waffe',ab:'st',dice:'1W6',strMul:1,critLow:20,critMul:2,enh:0,ranged:false,claw:false,leg:false});save();renderAll()};
+$('addC').onclick=()=>{S.checks.push({name:'Neue Probe',b:0});save();renderAll()};
+$('addA').onclick=()=>{S.abilities.push({name:'Neue Fähigkeit',max:1,per:'Tag',used:0,text:''});save();renderAll()};
+$('exp').onclick=()=>{const t=JSON.stringify(S);$('io').value=t;if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('Werte kopiert'),()=>{$('io').select();toast('Text markiert: bitte kopieren')})}else{$('io').select()}};
+$('imp').onclick=()=>{try{const o=JSON.parse($('io').value);S=Object.assign(structuredClone(DEFAULT),o);save();renderAll();toast('Werte geladen')}catch(e){toast('Der Text ist kein gültiger Werte-Text')}};
+let resetArmed=false;$('reset').onclick=e=>{if(!resetArmed){resetArmed=true;e.target.textContent='Wirklich zurücksetzen?';setTimeout(()=>{resetArmed=false;e.target.textContent='Auf Bukka zurücksetzen'},3000);return}S=structuredClone(DEFAULT);save();renderAll();toast('Auf Bukka zurückgesetzt')};
+load();renderAll();
+</script>
+
+</body></html>
