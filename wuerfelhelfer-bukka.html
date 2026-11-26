@@ -138,6 +138,7 @@ td input,td select{padding:4px 6px}
         <label class="f">Stärke-Modifikator<input id="sSt" type="number"></label>
         <label class="f">Geschicklichkeit-Mod.<input id="sGe" type="number"></label>
         <label class="f">Hinterhältiger Angriff (W6)<input id="sSneak" type="number"></label>
+        <label class="f">Studienziel-Bonus<input id="sStud" type="number"></label>
         <label class="f">Legendäre Kraft pro Tag<input id="sLk" type="number"></label>
         <label class="f">Legendenstufe<input id="sTier" type="number"></label>
         <label class="f">Waffenfokus-Bonus (Bastardschwert)<input id="sWf" type="number"></label>
@@ -155,7 +156,7 @@ td input,td select{padding:4px 6px}
         </table></div>
         <button class="btn ghost small" id="addW" type="button">Waffe hinzufügen</button>
         <p class="note">„Legendär“ bedeutet: Die Stufe der Legendenwaffe setzt Verbesserung und Bedrohungsbereich automatisch (Firstmesser: +2/+3/+4/+5, kritisch ab 19/18/18/17). Der Bastardschwert-Grundwert bleibt: 1W10, 19–20/×2, einhändig nach Hausregel.</p>
-        <p class="note">„Krähenbruder der Wunde“ bleibt auf 0, bis Bukka die Prestigeklasse nimmt (Voraussetzung u. a. Hinterhältiger Angriff +3W6). Ab 1 erscheinen Krähengestalt, Vors Bund und Wundflüstern. GAB, Rettungswürfe und Charakterstufe beim Aufstieg bitte selbst anpassen.</p>
+        <p class="note">„Krähenbruder der Wunde“ bleibt auf 0, bis Bukka die Prestigeklasse nimmt (Voraussetzung u. a. Hinterhältiger Angriff +2W6, Hausregel). Ab 1 erscheinen Krähengestalt, Vors Bund und Wundflüstern. GAB, Rettungswürfe und Charakterstufe beim Aufstieg bitte selbst anpassen.</p>
       </div>
       <div>
         <div class="lbl">Proben</div>
@@ -186,7 +187,7 @@ td input,td select{padding:4px 6px}
 const KEY='bukka-wuerfelhelfer-v2', OLDKEY='bukka-wuerfelhelfer-v1';
 const DEFAULT={
   name:'Bukka Schwarzfeder', sub:'Tengu · Attentäter (Klippenmörder) 6 · Wächter 1',
-  gab:6, st:3, ge:3, sneak:2, wf:2, lkMax:5, tier:1, surge:6, leg:1, lvl:6, kb:0,
+  gab:6, st:3, ge:3, sneak:2, wf:2, lkMax:5, tier:1, surge:6, leg:1, lvl:6, kb:0, stud:2,
   fu:{deck:0,vdeck:0,vdist:0}, crowUsed:0, crowPick:'Klauen', fp:0,
   weapons:[
     {name:'Firstmesser einhändig',ab:'st',dice:'1W10',strMul:1,critLow:19,critMul:2,enh:0,ranged:false,claw:true,leg:true,focus:true},
@@ -202,7 +203,7 @@ const DEFAULT={
   abilities:[
     {name:'Tenguschwingen',max:1,per:'Tag',used:0,text:'Fliegen 9 m für 6 Minuten.'}
   ],
-  sits:{wfp:false,flank:false,flat:false,high:false,charge:false,bless:false,haste:false,prone:false,near:true,claw:true,vorSight:false,vor:false,crow:false},
+  sits:{study:false,wfp:false,flank:false,flat:false,high:false,charge:false,bless:false,haste:false,prone:false,near:true,claw:true,vorSight:false,vor:false,crow:false},
   weapon:0, mode:'full', lkUsed:0
 };
 const LEG=[null,{enh:2,crit:19},{enh:3,crit:18},{enh:4,crit:18},{enh:5,crit:17}];
@@ -221,6 +222,7 @@ let toastT;function toast(m){let el=document.querySelector('.toast');if(!el){el=
 
 const SITS=[
   {k:'wfp',t:'Waffenfokus-Kraft',h:'1 Kraft, schnelle Aktion',focusOnly:true},
+  {k:'study',t:'Studienziel',h:'Angriff und Schaden'},
   {k:'flank',t:'In der Zange',h:'+2 Angriff, Hinterhältig',melee:true},
   {k:'flat',t:'Gegner auf dem falschen Fuß',h:'Hinterhältig'},
   {k:'high',t:'Von oben (3 m)',h:'+2/+2'},
@@ -245,6 +247,7 @@ function compute(){
   add(S.gab,'Grund-Angriffsbonus');add(abil,w.ab==='ge'?'Geschicklichkeit':'Stärke');add(w.enh,'Verbesserung');
   if(w.focus)add(S.wf||0,'Waffenfokus (legendär)');
   const wfp=Math.floor(S.tier/2);if(w.focus&&s.wfp&&wfp>0)add(wfp,'Waffenfokus-Kraft');
+  if(s.study)add(S.stud||0,'Studienziel');
   if(s.flank&&melee)add(2,'Zange');
   if(s.high)add(2,'von oben');
   if(s.charge&&melee)add(2,'Sturmangriff');
@@ -255,7 +258,7 @@ function compute(){
   const base=mods.reduce((a,b)=>a+b[0],0);
   const strD=Math.floor(S.st*w.strMul);
   let dm=[];const addD=(v,t)=>{if(v)dm.push([v,t])};
-  addD(strD,'Stärke');addD(w.enh,'Verbesserung');if(s.high)addD(2,'von oben');addD(+$('xDmg').value||0,'Sonstiges');
+  addD(strD,'Stärke');addD(w.enh,'Verbesserung');if(s.study)addD(S.stud||0,'Studienziel');if(s.high)addD(2,'von oben');addD(+$('xDmg').value||0,'Sonstiges');
   const dmgStatic=dm.reduce((a,b)=>a+b[0],0);
   const vorDist=s.vor&&s.vorSight&&S.leg>0&&melee;
   const sneakOk=(s.flat||(s.flank&&melee)||vorDist)&&(melee||s.near)&&S.sneak>0;
@@ -269,9 +272,9 @@ function compute(){
     if(!single&&s.haste)iters.splice(1,0,0);
     iters.forEach((pen,i)=>list.push({label:(i+1)+'. Angriff',bonus:base-pen,pen,why:mods,dice:w.dice,stat:dmgStatic,dWhy:dm,critLow:w.critLow,critMul:w.critMul}));
     if(!single&&w.claw&&s.claw&&!w.ranged){
-      const cb=S.gab+S.st-5+(s.flank?2:0)+(s.high?2:0)+(s.bless?1:0)+(s.haste?1:0)+(s.prone?-4:0)+x;
-      const cs=Math.floor(S.st/2)+(s.high?2:0)+(+$('xDmg').value||0);
-      let cw=[[S.gab,'Grund-Angriffsbonus'],[S.st,'Stärke'],[-5,'Klaue neben Waffe']];if(s.flank)cw.push([2,'Zange']);if(s.high)cw.push([2,'von oben']);if(s.bless)cw.push([1,'Moral']);if(s.haste)cw.push([1,'Hast']);if(s.prone)cw.push([-4,'liegend']);if(x)cw.push([x,'Sonstiges']);
+      const cb=S.gab+S.st-5+(s.study?(S.stud||0):0)+(s.flank?2:0)+(s.high?2:0)+(s.bless?1:0)+(s.haste?1:0)+(s.prone?-4:0)+x;
+      const cs=Math.floor(S.st/2)+(s.study?(S.stud||0):0)+(s.high?2:0)+(+$('xDmg').value||0);
+      let cw=[[S.gab,'Grund-Angriffsbonus'],[S.st,'Stärke'],[-5,'Klaue neben Waffe']];if(s.study)cw.push([S.stud||0,'Studienziel']);if(s.flank)cw.push([2,'Zange']);if(s.high)cw.push([2,'von oben']);if(s.bless)cw.push([1,'Moral']);if(s.haste)cw.push([1,'Hast']);if(s.prone)cw.push([-4,'liegend']);if(x)cw.push([x,'Sonstiges']);
       list.push({label:'Klaue',bonus:cb,why:cw,dice:'1W3',stat:cs,dWhy:[[Math.floor(S.st/2),'halbe Stärke']].concat(s.high?[[2,'von oben']]:[]),critLow:20,critMul:2});
     }
   }
@@ -304,6 +307,7 @@ function renderAttack(){
     const y=document.createElement('div');y.className='why';y.textContent='Angriff: '+whyText(a.why,a.pen)+'. Schaden: '+a.dice+(a.dWhy.length?' '+whyText(a.dWhy):'')+(sneakOk?' · Hinterhältiger Angriff '+S.sneak+'W6':'');
     d.appendChild(y);A.appendChild(d)});
   if(S.sits.charge&&!w.ranged&&S.mode==='full'){const n=document.createElement('p');n.className='note';n.textContent='Beim Sturmangriff gibt es nur einen Angriff. Danach hat Bukka bis zu seinem nächsten Zug −2 auf die RK.';A.appendChild(n)}
+  if(S.sits.study){const n=document.createElement('p');n.className='note';n.textContent='Erst schauen, dann springen: Bukka hat bis zum Ende seiner nächsten Runde +2 RK gegen das studierte Ziel (Hausregel, ab der Übungsszene mit Kasharr).';A.appendChild(n)}
   if(!sneakOk&&!w.ranged&&S.sneak>0){const n=document.createElement('p');n.className='note';n.textContent='Kein Hinterhältiger Angriff: Dafür braucht es die Zange, einen Gegner auf dem falschen Fuß'+(S.leg>0?' oder Vor, die ablenkt (nur wenn Vor in Sicht ist)':'')+'.';A.appendChild(n)}
 }
 function addResult(logId,node){const L=$(logId);L.prepend(node);while(L.children.length>6)L.lastChild.remove()}
@@ -375,6 +379,8 @@ function renderAbilities(){
     const minus=document.createElement('button');minus.type='button';minus.className='btn ghost small';minus.textContent='−1';minus.setAttribute('aria-label','Flüsterpunkt weg');minus.onclick=()=>{S.fp=Math.max(0,S.fp-1);save();renderAbilities()};
     w.querySelector('.head').append(minus,plus);A.appendChild(w);
   }
+  card('Studienziel','Bewegungsaktion'+(S.lvl>=7?' oder schnelle Aktion':'')+' · bis zu '+(S.lvl>=10?3:S.lvl>=5?2:1)+' Ziele','Bukka studiert einen Gegner, den er sieht. Gegen ihn: +'+(S.stud||0)+' auf Angriff und Schaden mit Waffen, auf Bluffen, Wissen, Wahrnehmung, Motiv erkennen und Überlebenskunst sowie auf den SG seiner Attentäter-Fähigkeiten. Hält, bis das Ziel tot ist oder Bukka ein neues wählt. Im Angriffsbereich „Studienziel“ antippen.',0,'');
+  card('Erst schauen, dann springen','Hausregel · ab der Übungsszene mit Kasharr','Hat Bukka ein Ziel studiert, bevor er es angreift, erhält er bis zum Ende seiner nächsten Runde +2 auf die RK gegen dieses Ziel.',0,'');
   card('Immer aktiv','','Schutzring +2: +2 Ablenkung auf die RK, auch gegen Berührungsangriffe und auf dem falschen Fuß (schon in der RK auf dem Bogen eintragen).',0,'');
   S.abilities.forEach((a,i)=>{const d=document.createElement('div');d.className='ability';
     d.innerHTML='<div class="head"><b>'+a.name+'</b><span class="mut">'+(a.max-a.used)+' von '+a.max+' pro '+a.per+' übrig</span></div>'+(a.text?'<div class="mut">'+a.text+'</div>':'');
@@ -383,7 +389,7 @@ function renderAbilities(){
   const hk=document.createElement('div');hk.className='ability';hk.innerHTML='<div class="head"><b>Schwer zu töten</b><span class="mut">immer aktiv</span></div><div class="mut">Unter 0 TP stabilisiert sich Bukka von selbst und stirbt erst bei minus doppelter Konstitution (−28 TP).</div>';A.appendChild(hk);
 }
 function renderSettings(){
-  $('sName').value=S.name;$('sSub').value=S.sub;$('sGab').value=S.gab;$('sSt').value=S.st;$('sGe').value=S.ge;$('sSneak').value=S.sneak;$('sLk').value=S.lkMax;$('sTier').value=S.tier;$('sWf').value=S.wf;$('sSurge').value=S.surge;$('sLeg').value=S.leg;$('sLvl').value=S.lvl;$('sKb').value=S.kb;
+  $('sName').value=S.name;$('sSub').value=S.sub;$('sGab').value=S.gab;$('sSt').value=S.st;$('sGe').value=S.ge;$('sSneak').value=S.sneak;$('sStud').value=S.stud;$('sLk').value=S.lkMax;$('sTier').value=S.tier;$('sWf').value=S.wf;$('sSurge').value=S.surge;$('sLeg').value=S.leg;$('sLvl').value=S.lvl;$('sKb').value=S.kb;
   const T=$('wTable');T.innerHTML='';
   S.weapons.forEach((w,i)=>{const tr=document.createElement('tr');
     const inp=(k,type,val,attrs='')=>'<td><input data-w="'+i+'" data-k="'+k+'" type="'+type+'" value="'+val+'" '+attrs+'></td>';
@@ -403,7 +409,7 @@ function renderSettings(){
 }
 function renderAll(withSettings=true){renderTop();renderAttack();renderChecks();renderAbilities();if(withSettings)renderSettings()}
 
-[['sName','name',0],['sSub','sub',0],['sGab','gab',1],['sSt','st',1],['sGe','ge',1],['sSneak','sneak',1],['sLk','lkMax',1],['sTier','tier',1],['sWf','wf',1],['sSurge','surge',1],['sLeg','leg',1],['sLvl','lvl',1],['sKb','kb',1]].forEach(([id,k,n])=>{$(id).onchange=e=>{S[k]=n?+e.target.value:e.target.value;if(k==='lkMax')S.lkUsed=Math.min(S.lkUsed,S.lkMax);save();renderAll(false)}});
+[['sName','name',0],['sSub','sub',0],['sGab','gab',1],['sSt','st',1],['sGe','ge',1],['sSneak','sneak',1],['sStud','stud',1],['sLk','lkMax',1],['sTier','tier',1],['sWf','wf',1],['sSurge','surge',1],['sLeg','leg',1],['sLvl','lvl',1],['sKb','kb',1]].forEach(([id,k,n])=>{$(id).onchange=e=>{S[k]=n?+e.target.value:e.target.value;if(k==='lkMax')S.lkUsed=Math.min(S.lkUsed,S.lkMax);save();renderAll(false)}});
 document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;save();renderAttack()});
 $('xAtk').oninput=renderAttack;$('xDmg').oninput=renderAttack;
 $('rollAll').onclick=()=>{const {list,sneakOk}=compute();[...list].reverse().forEach(a=>rollAttack(a,sneakOk))};
