@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aufstiegsplaner</title>
+<style>
+:root{
+  --bg:#EDEFEA; --panel:#FAFBF8; --ink:#1B2230; --muted:#5B6474; --line:#C9CEC6;
+  --accent:#2C5B86; --accent-ink:#FFFFFF; --brass:#9A6E1C; --chip:#E1E6DF;
+  --good:#2E7A4B; --warn:#A8461F; --b:#7A2E8C;
+  --f-display:Georgia,"Times New Roman",serif;
+  --f-body:"Segoe UI",system-ui,-apple-system,sans-serif;
+  --f-num:ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#7FB2E0; --accent-ink:#0F1520; --brass:#D9AE5C; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --b:#CF8BE0; color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding:12px max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+.wrap{max-width:860px;margin:0 auto;display:grid;gap:16px}
+.wrap>*{min-width:0}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+h1{font-size:1.6rem} h2{font-size:1.15rem} h3{font-size:1rem}
+.sub,.note{color:var(--muted);font-size:.9rem}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:12px;min-width:0}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;color:inherit;cursor:pointer}
+.seg button{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:7px 13px;font-size:.95rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.seg button:disabled{opacity:.5;cursor:not-allowed}
+.seg.plan button[data-p="B"][aria-pressed="true"]{background:var(--b);border-color:var(--b)}
+.btn{border:1px solid var(--accent);background:transparent;color:var(--accent);border-radius:8px;padding:5px 10px;font-size:.9rem}
+button:focus-visible,select:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+select,input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 7px;max-width:100%}
+label.f{display:grid;gap:3px;font-size:.82rem;color:var(--muted)}
+.lvl{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:8px;background:var(--bg)}
+.lvl .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:baseline}
+.feat{font-size:.9rem}
+.tag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;border:1px solid currentColor;margin-left:4px;vertical-align:1px}
+.ok{color:var(--good)} .bad{color:var(--warn)}
+.why{font-size:.84rem;color:var(--muted)}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 5px;text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+td.n{font-family:var(--f-num);white-space:nowrap}
+.colA{color:var(--accent)} .colB{color:var(--b)}
+.up{color:var(--good);font-weight:700}
+.step{display:inline-flex;align-items:center;gap:4px}
+.step button{width:30px;height:30px;border:1px solid var(--line);background:var(--chip);border-radius:6px;padding:0}
+.hint{border-left:4px solid var(--brass);padding:6px 10px;background:var(--bg);border-radius:4px;font-size:.9rem}
+details{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--bg)}
+summary{cursor:pointer;font-weight:600}
+.lvl>*,label.f,.grid3>*{min-width:0}
+.grid3 input{width:100%}
+.lvl select,.lvl input[type=text]{width:100%}
+.owned{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 12px;margin-top:8px;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Aufstiegsplaner</h1>
+    <p class="sub">Stufenaufstiege durchspielen: Was ändert sich, welche Talente gehen schon, welche Fertigkeiten lohnen sich? Zwei Wege nebeneinander vergleichen. Pathfinder 1 · Die Spielleitung hat das letzte Wort.</p>
+  </header>
+
+  <section aria-labelledby="h-held">
+    <h2 id="h-held">Held</h2>
+    <div class="row seg" id="heroes" role="group" aria-label="Held wählen"></div>
+    <div class="sub" id="heroSub"></div>
+    <div class="row seg plan" id="plans" role="group" aria-label="Plan">
+      <button type="button" data-p="A">Plan A</button>
+      <button type="button" data-p="B">Plan B</button>
+      <button type="button" class="btn" id="copyAB">A nach B kopieren</button>
+      <button type="button" class="btn" id="resetPlan">Plan leeren</button>
+    </div>
+    <div class="row">
+      <label class="f">Stufen vorausplanen
+        <select id="nLvl"><option value="1">+1</option><option value="2">+2</option><option value="3">+3</option><option value="4">+4</option></select></label>
+      <label class="f">Legendenstufen dazu
+        <select id="nTier"><option value="0">keine</option><option value="1">+1</option><option value="2">+2</option></select></label>
+    </div>
+    <div id="hints"></div>
+  </section>
+
+  <section aria-labelledby="h-st">
+    <h2 id="h-st">Stufen</h2>
+    <div id="levels" style="display:grid;gap:10px"></div>
+  </section>
+
+  <section aria-labelledby="h-fe">
+    <h2 id="h-fe">Fertigkeiten</h2>
+    <p class="note" id="skillBudget"></p>
+    <div class="tablewrap"><table><thead><tr><th>Fertigkeit</th><th>jetzt</th><th>Ränge dazu</th><th>danach</th></tr></thead><tbody id="skills"></tbody></table></div>
+    <p class="note">Höchstens 1 Rang pro Stufe und Fertigkeit. Der Plan geht davon aus, dass die Fertigkeit schon geübt ist (Klassenfertigkeits-Bonus also schon eingerechnet).</p>
+  </section>
+
+  <section aria-labelledby="h-erg">
+    <h2 id="h-erg">Ergebnis und Vergleich</h2>
+    <div class="tablewrap"><table><thead><tr><th>Wert</th><th>jetzt</th><th class="colA">Plan A</th><th class="colB">Plan B</th></tr></thead><tbody id="result"></tbody></table></div>
+  </section>
+
+  <section aria-labelledby="h-gw">
+    <h2 id="h-gw">Grundwerte und vorhandene Talente</h2>
+    <p class="note">Die Startwerte stammen aus dem Würfelhelfer. Attributsmodifikatoren, die dort nicht stehen, sind geschätzt. Bitte mit dem Charakterbogen vergleichen, denn davon hängen die Voraussetzungen der Talente ab.</p>
+    <div class="grid3" id="mods"></div>
+    <details><summary>Diese Talente habe ich schon</summary><div class="owned" id="owned"></div></details>
+    <div class="row"><button type="button" class="btn" id="resetHero">Diesen Helden auf Startwerte zurücksetzen</button></div>
+  </section>
+  <p class="note" style="text-align:center">Werte und Pläne werden nur auf diesem Gerät gespeichert.</p>
+</div>
+
+<script>
+/* ===== Regeldaten (Kurzfassungen, der Regeltext gilt) ===== */
+const ATTR={st:'ST',ge:'GE',ko:'KO',in:'IN',we:'WE',ch:'CH'};
+const babF={full:l=>l,tq:l=>Math.floor(l*3/4),half:l=>Math.floor(l/2)};
+const good=l=>2+Math.floor(l/2), poor=l=>Math.floor(l/3);
+const CLS={
+ hex:{n:'Hexenmeister',hd:6,sk:2,bab:'half',good:['will'],cast:'ch',
+   f:{9:'Blutlinienkraft (3.), Blutlinienzauber, neue bekannte Zauber',10:'Zauber des 5. Grades',11:'Blutlinienzauber, neue bekannte Zauber',12:'Zauber des 6. Grades'}},
+ magus:{n:'Kampfmagus',hd:8,sk:2,bab:'tq',good:['fort','will'],cast:'in',
+   f:{9:'Magus-Arkanum; Arkaner Vorrat verbessert Waffen bis +3',10:'Kämpferausbildung (zählt als Kämpfer Stufe −3); Zauber des 4. Grades',11:'Bonustalent; Verbesserter Zauberrückruf',12:'Magus-Arkanum'},
+   bonus:{11:'Bonustalent (Kampf, Metamagie oder Gegenstandserschaffung)'}},
+ zen:{n:'Zen-Bogenschütze (Mönch)',hd:8,sk:4,bab:'tq',good:['fort','ref','will'],
+   f:{9:'Reflexschuss (Gelegenheitsangriffe mit Pfeilen); Bewegung +9 m',10:'Zen-Bonustalent; Perfekter Schlag: drei Würfe, der beste zählt; Ki-Schlag rechtschaffen',11:'Trickschuss (Ki gegen Tarnung und Deckung)',12:'Weiter Schritt; RK-Bonus +1; Bewegung +12 m; Waffenloser Schaden 2W6 (auch Ki-Pfeile)'},
+   bonus:{10:'Zen-Bonustalent (ohne Voraussetzungen)'}},
+ slayer:{n:'Attentäter (Slayer)',hd:10,sk:6,bab:'full',good:['fort','ref'],
+   f:{7:'Pirscher',8:'Attentäter-Talent',9:'Hinterhältiger Angriff +3W6',10:'3. Studienziel (+3); fortgeschrittene Talente; Attentäter-Talent',11:'Schnelles Spurenlesen',12:'Attentäter-Talent; Hinterhältiger Angriff +4W6'},
+   talent:[8,10,12]}
+};
+const PATH={erzmagier:{n:'Erzmagier',hp:3},streiter:{n:'Streiter',hp:5},trickser:{n:'Trickser',hp:4},waechter:{n:'Wächter',hp:5}};
+const TIERF={2:'Erstaunliche Initiative (+Legendenstufe auf Initiative)',3:'Erholung',4:'Schubwürfel W8',5:'Legendäre Rettungswürfe',6:'Machtvoller Wille',7:'Unaufhaltsam; Schubwürfel W10',8:'Unsterblich',9:'Legendärer Held',10:'Schubwürfel W12'};
+
+/* Talente: req(s) prüft den Stand auf der jeweiligen Stufe; fx wirkt auf die Ergebnisse */
+const F=[
+ {id:'ini',n:'Verbesserte Initiative',t:'+4 auf Initiative.',fx:{init:4},h:'*'},
+ {id:'will',n:'Eiserner Wille',t:'+2 auf Willenswürfe.',fx:{will:2},h:'*'},
+ {id:'ref',n:'Blitzschnelle Reflexe',t:'+2 auf Reflexwürfe.',fx:{ref:2},h:'*'},
+ {id:'fort',n:'Große Zähigkeit',t:'+2 auf Zähigkeitswürfe.',fx:{fort:2},h:'*'},
+ {id:'tough',n:'Abhärtung',t:'+3 TP, ab 4 TW +1 TP je TW.',fx:{tough:1},h:'*'},
+ {id:'dodge',n:'Ausweichen',t:'+1 Ausweichbonus auf die RK.',fx:{ac:1},req:s=>s.m.ge>=1||'GE 13',h:'*'},
+ {id:'cref',n:'Kampfreflexe',t:'Zusätzliche Gelegenheitsangriffe (GE-Modifikator) pro Runde.',h:'bukka,echemon,aven'},
+ {id:'pa',n:'Heftiger Angriff',t:'Nahkampf: −1 Angriff / +2 Schaden je 4 GAB (zweihändig +3).',req:s=>s.m.st>=1&&s.bab>=1||'ST 13, GAB +1',h:'bukka,echemon'},
+ {id:'icrit',n:'Verbesserter kritischer Treffer (Hauptwaffe)',t:'Bedrohungsbereich der Waffe verdoppelt. Nicht mit Scharf oder ähnlichen Effekten kombinierbar.',req:s=>s.bab>=8||'GAB +8',h:'bukka,echemon,aven',crit:1},
+ {id:'wf',n:'Waffenfokus (Hauptwaffe)',t:'+1 auf Angriffe mit der Waffe.',fx:{atk:1},req:s=>s.bab>=1||'GAB +1',h:'bukka,echemon,aven'},
+ {id:'ws',n:'Waffenspezialisierung (Hauptwaffe)',t:'+2 Schaden mit der Waffe.',fx:{dmg:2},h:'echemon',fn:s=>!s.f.wf?'Waffenfokus':(s.fighter>=4?true:'Kämpferstufe 4 (Kampfmagus ab Stufe 10)')},
+ {id:'astrike',n:'Arkaner Schlag',t:'Schnelle Aktion: +1 Schaden, +1 je 5 Zauberstufen; Waffe gilt als magisch.',req:s=>s.caster||'arkane Zauber',h:'echemon,eran'},
+ {id:'int',n:'Intensivierter Zauber',t:'Metamagie (+1 Grad): Schadensobergrenze +5 Würfel, z. B. Schockgriff bis Zauberstufe statt 5W6.',req:s=>s.caster||'Zauber',h:'echemon,eran'},
+ {id:'ccast',n:'Kampfzauberei',t:'+4 auf Konzentration beim defensiven Zaubern oder im Ringkampf.',req:s=>s.caster||'Zauber',h:'echemon,eran'},
+ {id:'pbs',n:'Kernschuss',t:'+1 Angriff und Schaden auf Fernkampfangriffe bis 9 m (auch Strahlen).',h:'eran,aven,bukka'},
+ {id:'precise',n:'Präzisionsschuss',t:'Kein −4 mehr, wenn das Ziel im Nahkampf mit Verbündeten steht (auch Strahlen).',req:s=>s.f.pbs||'Kernschuss',h:'eran,aven,bukka'},
+ {id:'iprecise',n:'Verbesserter Präzisionsschuss',t:'Ignoriert Deckung (außer völlige) und Tarnung (außer völlige).',req:s=>(s.m.ge>=4&&s.bab>=11&&s.f.precise)||'GE 19, Präzisionsschuss, GAB +11',h:'aven,eran'},
+ {id:'far',n:'Weitschuss',t:'Grundreichweite halbiert den Malus pro Entfernungsschritt.',req:s=>s.f.pbs||'Kernschuss',h:'aven'},
+ {id:'mob',n:'Beweglichkeit',t:'+4 RK gegen Gelegenheitsangriffe durch Bewegung.',req:s=>s.f.dodge||'Ausweichen',h:'aven,bukka'},
+ {id:'shotrun',n:'Schießen im Vorbeilaufen',t:'Bewegen, schießen, weiterbewegen in einer Runde.',req:s=>(s.f.mob&&s.f.pbs&&s.bab>=4)||'Beweglichkeit, Kernschuss, GAB +4',h:'aven'},
+ {id:'pinpoint',n:'Gezielter Schuss (Pinpoint Targeting)',t:'Standardaktion: ein Fernkampfangriff gegen Berührungs-RK.',req:s=>(s.f.iprecise&&s.bab>=16)||'Verb. Präzisionsschuss, GAB +16',h:'aven'},
+ {id:'flyby',n:'Vorbeifliegender Angriff',t:'Im Flug: Standardaktion während der Bewegung.',req:s=>s.fly||'Fluggeschwindigkeit',h:'bukka'},
+ {id:'sfocus',n:'Zauberfokus (Hervorrufung)',t:'+1 auf den SG von Hervorrufungszaubern.',req:s=>s.caster||'Zauber',h:'eran'},
+ {id:'gsfocus',n:'Mächtiger Zauberfokus (Hervorrufung)',t:'Weitere +1 auf den SG von Hervorrufungszaubern.',req:s=>s.f.sfocus||'Zauberfokus',h:'eran'},
+ {id:'spen',n:'Zauber durchdringen',t:'+2 auf Würfe gegen Zauberresistenz (wichtig gegen Dämonen).',fx:{sr:2},req:s=>s.caster||'Zauber',h:'eran,echemon'},
+ {id:'gspen',n:'Mächtiges Zauber durchdringen',t:'Weitere +2 gegen Zauberresistenz.',fx:{sr:2},req:s=>s.f.spen||'Zauber durchdringen',h:'eran,echemon'},
+ {id:'emp',n:'Zauber verstärken',t:'Metamagie (+2 Grade): variable Zahlen ×1,5.',req:s=>s.caster||'Zauber',h:'eran'},
+ {id:'max',n:'Zauber maximieren',t:'Metamagie (+3 Grade): variable Zahlen auf Maximum.',req:s=>s.caster||'Zauber',h:'eran'},
+ {id:'wfray',n:'Waffenfokus (Strahl)',t:'+1 auf Angriffe mit Strahlen.',fx:{atk:1},req:s=>s.bab>=1||'GAB +1',h:'eran'},
+ {id:'sfoc',n:'Fertigkeitsfokus (eine Fertigkeit)',t:'+3 auf eine Fertigkeit, ab 10 Rängen +6.',h:'*'},
+ /* legendäre Talente */
+ {id:'m_power',n:'Zusätzliche Legendäre Kraft',t:'+2 Legendäre Kraft pro Tag. Mehrfach wählbar.',fx:{lk:2},my:1,multi:1,h:'*'},
+ {id:'m_dual',n:'Doppelter Pfad',t:'Eine Pfadfähigkeit eines zweiten Pfades wählen; künftige Pfadfähigkeiten aus beiden Pfaden.',my:1,h:'*'},
+ {id:'m_ini',n:'Verbesserte Initiative (legendär)',t:'Zusätzlich die halbe Legendenstufe auf Initiative; bei Gleichstand handelt der Held zuerst.',req:s=>s.f.ini||'Verbesserte Initiative',fx:{initT:1},my:1,h:'*'},
+ {id:'m_pa',n:'Heftiger Angriff (legendär)',t:'Schadensbonus von Heftiger Angriff steigt um die Hälfte.',req:s=>s.f.pa||'Heftiger Angriff',my:1,h:'bukka,echemon'},
+ {id:'m_wf',n:'Waffenfokus (legendär)',t:'Waffenfokus zählt doppelt; 1 Kraft: + halbe Legendenstufe auf Angriffe bis Zugende.',req:s=>s.f.wf||'Waffenfokus',fx:{atk:1},my:1,h:'bukka,echemon,aven'},
+ {id:'m_lore',n:'Legendäres Zauberwissen',t:'Legendäre Fassungen bekannter Zauber lernen (Anzahl nach Legendenstufe).',my:1,h:'eran,echemon'},
+ {id:'m_ccast',n:'Kampfzauberei (legendär)',t:'Konzentration beim defensiven Zaubern zusätzlich verbessert (Regeltext).',req:s=>s.f.ccast||'Kampfzauberei',my:1,h:'echemon,eran'},
+ {id:'m_tough',n:'Abhärtung (legendär)',t:'Zusätzliche TP und Schutz gegen Tod durch Schaden (Regeltext).',req:s=>s.f.tough||'Abhärtung',my:1,h:'*'},
+];
+const FB=Object.fromEntries(F.map(x=>[x.id,x]));
+
+/* ===== Helden (Stand laut Würfelhelfer) ===== */
+const HEROES={
+ eran:{n:'Eran',sub:'Aasimar · Hexenmeister 8 · Erzmagier 2',cls:'hex',lvl:8,tier:2,path:'erzmagier',
+   m:{st:-1,ge:4,ko:1,in:0,we:2,ch:4},cur:{bab:4,fort:3,ref:5,will:8,init:5,lk:7,sr:10},
+   atk:{n:'Sengender Strahl (legendär)',a:12,d:'6W6+1 Feuer',dflat:1,abil:'ge',ray:1},
+   owned:['wfray','sfocus'],caster:1,
+   skills:[['Wahrnehmung',12],['Diplomatie',11],['Wissen (Die Ebenen)',12],['Wissen (Religion)',13],['Beruf (Bekehren)',23],['Heimlichkeit',9],['Akrobatik',8],['Motiv erkennen',6]],
+   hints:['Präzisionsschuss lohnt sich für die Strahlen: kein −4 mehr ins Getümmel. Dafür braucht es zuerst Kernschuss (das gibt auf 9 m auch +1/+1).','Zauber durchdringen hilft gegen die Zauberresistenz der Dämonen.','Stufe 12 bringt eine Attributserhöhung und Zauber des 6. Grades.']},
+ echemon:{n:'Echemon',sub:'Tiefling · Kampfmagus 8 · Streiter 2',cls:'magus',lvl:8,tier:2,path:'streiter',
+   m:{st:2,ge:3,ko:3,in:4,we:1,ch:0},cur:{bab:6,fort:9,ref:6,will:7,init:4,lk:7,sr:0},
+   atk:{n:'Narbe (Irabeths Schwert)',a:11,d:'1W8+4',dflat:4,abil:'st',crit:'18–20',pa:1},
+   owned:['pa','wf','astrike','ccast'],caster:1,
+   skills:[['Wissen (Die Ebenen)',14],['Zauberkunde',10],['Handwerk (Schmied)',11],['Einschüchtern',7]],
+   hints:['Ab Stufe 10 zählt Echemon über die Kämpferausbildung als Kämpfer der Stufe 7: Waffenspezialisierung wird möglich, ideal für das Bonustalent auf Stufe 11.','Intensivierter Zauber hebt die Schadensgrenze von Schockgriff: dann 8W6 bis 10W6 statt 5W6.','Arkaner Schlag steigt mit Zauberstufe 10 auf +3 Schaden.']},
+ aven:{n:'Aven',sub:'Undine · Zen-Bogenschütze 8 · Trickser 2',cls:'zen',lvl:8,tier:2,path:'trickser',
+   m:{st:0,ge:6,ko:1,in:0,we:3,ch:0},cur:{bab:6,fort:7,ref:12,will:9,init:10,lk:7,sr:0},
+   atk:{n:'Bogen des vollkommenen Augenblicks (Schlaghagel)',a:16,d:'1W8+5',dflat:5,abil:'ge',flurry:1,da:1,crit:'18–20/×3'},
+   owned:['wf','pbs','precise','dodge'],
+   skills:[['Akrobatik',15],['Heimlichkeit',11],['Wahrnehmung',7],['Motiv erkennen',8],['Entfesselungskunst',6],['Klettern',10],['Schwimmen',8],['Beruf (Bogner)',8],['Wissen (Die Ebenen)',6],['Wissen (Geschichte)',5],['Wissen (Religion)',4],['Heilkunde',3]],
+   hints:['Beim Schlaghagel zählt die Mönchsstufe als Angriffsbonus: Jede Stufe bringt +1 auf alle Pfeile.','Das Zen-Bonustalent auf Stufe 10 braucht keine Voraussetzungen: Verbesserter kritischer Treffer, Gezielter Schuss oder Schießen im Vorbeilaufen.','Schnellschuss und Mehrfachschuss gehen nicht zusammen mit dem Schlaghagel.','Stufe 12: Ki-Pfeile machen 2W6 Grundschaden.']},
+ bukka:{n:'Bukka',sub:'Tengu · Attentäter (Klippenmörder) 6 · Wächter 1',cls:'slayer',lvl:6,tier:1,path:'waechter',
+   m:{st:3,ge:3,ko:2,in:0,we:1,ch:0},cur:{bab:6,fort:7,ref:8,will:3,init:3,lk:5,sr:0},
+   atk:{n:'Firstmesser einhändig',a:13,d:'1W10+5',dflat:5,abil:'st',crit:'19–20',pa:1},
+   owned:['wf','m_wf'],fly:1,
+   skills:[['Akrobatik',11],['Heimlichkeit',11],['Wahrnehmung',10],['Klettern',9],['Mechanismus ausschalten',9],['Fliegen',8],['Motiv erkennen',6]],
+   hints:['Die Prestigeklasse Krähenbruder der Wunde verlangt Hinterhältigen Angriff +3W6. Den gibt es mit Attentäter 9, also frühestens ab Charakterstufe 10.','Legendenstufe 2 bringt Erstaunliche Initiative (+2) und eine Attributserhöhung um +2.','Verbesserter kritischer Treffer wird mit GAB +8 möglich (Stufe 8). Mit der Legendenwaffe ab Stufe 2 nicht doppelt rechnen: Bitte die Spielleitung fragen.']},
+ davoc:{n:'Davoc',disabled:1}
+};
+
+/* ===== Zustand ===== */
+const KEY='aufstiegsplaner-v1';
+const blankPlan=()=>({n:1,t:0,feat:{},abil:{},fcb:{},sk:{},path:{}});
+function freshHero(id){const h=HEROES[id];return{m:{...h.m},owned:[...h.owned],plans:{A:blankPlan(),B:blankPlan()},cur:'A'}}
+let S={hero:'eran',h:{}};
+try{const t=localStorage.getItem(KEY);if(t)S=Object.assign(S,JSON.parse(t))}catch(e){}
+for(const id in HEROES)if(!HEROES[id].disabled&&!S.h[id])S.h[id]=freshHero(id);
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const $=id=>document.getElementById(id);
+const sg=n=>(n>=0?'+':'−')+Math.abs(n);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ===== Berechnung eines Plans ===== */
+function slotsFor(h,p){
+ const C=CLS[h.cls],out=[];
+ for(let i=1;i<=p.n;i++){const L=h.lvl+i,cl=L; // eine Klasse
+  const lv={L,cl,items:[]};
+  if(L%2===1)lv.items.push({k:'f'+L,type:'feat',label:'Talent (Charakterstufe '+L+')'});
+  if(C.bonus&&C.bonus[cl])lv.items.push({k:'b'+L,type:'feat',bonus:h.cls,label:C.bonus[cl]});
+  if(C.talent&&C.talent.includes(cl))lv.items.push({k:'t'+L,type:'text',label:'Attentäter-Talent (Schurken-Talente oder Kampfstil)'});
+  if(L%4===0)lv.items.push({k:'a'+L,type:'abil',label:'Attributserhöhung +1'});
+  lv.feature=C.f[cl]||'';
+  out.push(lv)}
+ const tiers=[];for(let j=1;j<=p.t;j++){const T=h.tier+j,tv={T,items:[{k:'p'+T,type:'path',label:'Pfadfähigkeit ('+PATH[h.path].n+')'}]};
+  if(T%2===1)tv.items.push({k:'mf'+T,type:'feat',my:1,label:'Legendäres Talent'});
+  if(T%2===0)tv.items.push({k:'ma'+T,type:'abil',two:1,label:'Attributserhöhung +2 (Legendenstufe)'});
+  tv.feature=TIERF[T]||'';tiers.push(tv)}
+ return{levels:out,tiers};
+}
+function stateAt(id,p,L,T,exceptKey){ // Stand bis einschließlich Stufe L / Legendenstufe T
+ const h=HEROES[id],H=S.h[id],C=CLS[h.cls];
+ const m={...H.m};const f={};H.owned.forEach(x=>f[x]=1);
+ for(const k in p.abil){const a=p.abil[k];if(!a||!a.attr)continue;const lvlOk=(k[0]==='a'&&+k.slice(1)<=L)||(k[0]==='m'&&+k.slice(2)<=T);if(lvlOk&&a.up)m[a.attr]+=(k[0]==='m'?1:1)}
+ for(const k in p.feat){if(k===exceptKey)continue;const v=p.feat[k];if(!v)continue;const lv=k[0]==='m'?+k.slice(2):+k.slice(1);if((k[0]==='m'?lv<=T:lv<=L))f[v]=(f[v]||0)+1}
+ const bab=h.cur.bab+(babF[C.bab](L)-babF[C.bab](h.lvl));
+ const fighter=h.cls==='magus'&&L>=10?L-3:0;
+ return{m,f,bab,L,T,fighter,caster:!!h.caster,fly:!!h.fly};
+}
+function reqCheck(feat,s){const r=feat.fn?feat.fn(s):(feat.req?feat.req(s):true);return typeof r==='string'?r:(r?true:'Voraussetzung')}
+function compute(id,pk){
+ const h=HEROES[id],H=S.h[id],p=H.plans[pk],C=CLS[h.cls];
+ const L=h.lvl+p.n,T=h.tier+p.t,s=stateAt(id,p,L,T);
+ const dL=L-h.lvl;
+ const sv=k=>(C.good.includes(k)?good:poor);
+ const r={L,T,bab:s.bab};
+ const dm={};for(const a in ATTR)dm[a]=s.m[a]-H.m[a];
+ r.fort=h.cur.fort+sv('fort')(L)-sv('fort')(h.lvl)+dm.ko+(s.f.fort?2:0)-(H.owned.includes('fort')?2:0);
+ r.ref=h.cur.ref+sv('ref')(L)-sv('ref')(h.lvl)+dm.ge+(s.f.ref?2:0)-(H.owned.includes('ref')?2:0);
+ r.will=h.cur.will+sv('will')(L)-sv('will')(h.lvl)+dm.we+(s.f.will?2:0)-(H.owned.includes('will')?2:0);
+ const newF=x=>s.f[x]&&!H.owned.includes(x);
+ r.init=h.cur.init+dm.ge+(newF('ini')?4:0)+(s.f.m_ini?Math.floor(T/2)-(H.owned.includes('m_ini')?Math.floor(h.tier/2):0):0);
+ if(h.tier<2&&T>=2)r.init+=T; else if(h.tier>=2)r.init+=(T-h.tier);
+ // TP
+ let hp=0;for(let i=1;i<=dL;i++){hp+=C.hd/2+1+s.m.ko;if((p.fcb[h.lvl+i]||'hp')==='hp')hp+=1}
+ hp+=dm.ko*h.lvl; hp+=PATH[h.path].hp*(T-h.tier);
+ if(newF('tough'))hp+=Math.max(3,L); else if(H.owned.includes('tough'))hp+=dL;
+ r.hp=hp;
+ r.lk=h.cur.lk+2*(T-h.tier)+2*Math.max(0,(s.f.m_power||0)-(H.owned.includes('m_power')?1:0));
+ // Angriff
+ const a=h.atk;let atk=a.a;
+ atk+=a.flurry?dL:(s.bab-h.cur.bab);
+ atk+=dm[a.abil]||0;
+ if(a.ray){if(newF('wfray'))atk+=1}else{if(newF('wf'))atk+=1;if(newF('m_wf'))atk+=1}
+ let dflat=a.dflat+(a.abil==='st'?dm.st:0);
+ if(newF('ws'))dflat+=2;
+ r.atk=atk;r.dmg=a.d.replace(/\+\d+/,'+'+dflat);
+ r.extra=[];
+ if(a.pa&&s.f.pa){const st=1+Math.floor(s.bab/4);let b=2*st;if(s.f.m_pa)b=Math.floor(b*1.5);r.extra.push('Heftiger Angriff −'+st+' / +'+b)}
+ if(a.da){const st=1+Math.floor(s.bab/4);r.extra.push('Tödliche Zielgenauigkeit (legendär) −'+st+' / +'+(3*st))}
+ if(s.f.astrike&&h.caster){r.extra.push('Arkaner Schlag +'+(1+Math.floor(L/5))+' Schaden')}
+ if(newF('precise'))r.extra.push('Präzisionsschuss: kein −4 ins Getümmel');
+ if(newF('pbs'))r.extra.push('Kernschuss +1/+1 bis 9 m');
+ if(newF('icrit'))r.extra.push('Bedrohungsbereich verdoppelt (Hauptwaffe)');
+ if(id==='bukka'){const sn=L>=9?3:2;r.extra.push('Hinterhältiger Angriff +'+(L>=12?4:sn)+'W6');r.extra.push('Studienziel +'+(L>=10?3:2))}
+ if(id==='aven'){const d=Math.floor(L/2)-Math.floor(h.lvl/2)+dm.we;if(d)r.extra.push('Ki-Vorrat '+sg(d))}
+ if(id==='echemon'){const d=Math.floor(L/2)-Math.floor(h.lvl/2)+dm.in;r.extra.push((d?'Arkaner Vorrat '+sg(d)+'; ':'')+'Vorrat verbessert die Waffe bis +'+(L>=13?4:L>=9?3:2))}
+ if(s.f.spen||s.f.gspen){r.sr=h.cur.sr+(L-h.lvl)+(newF('spen')?2:0)+(newF('gspen')?2:0)}else r.sr=h.cur.sr?h.cur.sr+(L-h.lvl):0;
+ // Merkmale
+ const feats=[];for(let i=1;i<=dL;i++){const t=C.f[h.lvl+i];if(t)feats.push('St. '+(h.lvl+i)+': '+t)}
+ for(let j=1;j<=p.t;j++){const t=TIERF[h.tier+j];if(t)feats.push('L'+(h.tier+j)+': '+t)}
+ r.feat=feats;
+ r.chosen=Object.entries(p.feat).filter(([k,v])=>v&&(k[0]==='m'?+k.slice(2)<=T:+k.slice(1)<=L)).map(([k,v])=>FB[v].n);
+ for(const k in p.path)if(p.path[k]&&+k.slice(1)<=T)r.chosen.push('Pfad: '+p.path[k]);
+ // Fertigkeiten
+ r.skills={};h.skills.forEach(([n,b])=>{let v=b+(p.sk[n]||0);r.skills[n]=v});
+ return r;
+}
+
+/* ===== Darstellung ===== */
+function cur(){return S.h[S.hero]} function plan(){const H=cur();return H.plans[H.cur]}
+function renderHeroes(){
+ const W=$('heroes');W.innerHTML='';
+ for(const id in HEROES){const h=HEROES[id];const b=document.createElement('button');b.type='button';b.textContent=h.n+(h.disabled?' (Werte folgen)':'');
+  b.disabled=!!h.disabled;b.setAttribute('aria-pressed',id===S.hero);b.onclick=()=>{S.hero=id;save();renderAll()};W.appendChild(b)}
+ const h=HEROES[S.hero];$('heroSub').textContent=h.sub+' · nächste Stufe: '+(h.lvl+1);
+ document.querySelectorAll('#plans [data-p]').forEach(b=>{b.setAttribute('aria-pressed',b.dataset.p===cur().cur);b.onclick=()=>{cur().cur=b.dataset.p;save();renderAll()}});
+ $('nLvl').value=plan().n;$('nTier').value=plan().t;
+ $('hints').innerHTML=h.hints.map(t=>'<div class="hint">'+esc(t)+'</div>').join('');
+}
+function featOptions(item,id,L,T){
+ const h=HEROES[id],p=plan();const s=stateAt(id,p,L,T,item.k);
+ let list=F.filter(x=>(item.my?x.my:!x.my)&&(x.h==='*'||x.h.split(',').includes(id)));
+ if(item.bonus==='zen'){list=F.filter(x=>['cref','dodge','far','pbs','precise','iprecise','mob','icrit','pinpoint','shotrun'].includes(x.id))}
+ if(item.bonus==='magus'){list=list.filter(x=>!['will','ref','fort','sfoc','sfocus','gsfocus','spen','gspen'].includes(x.id))}
+ return list.map(x=>{const own=cur().owned.includes(x.id)&&!x.multi;const taken=Object.entries(p.feat).some(([k,v])=>v===x.id&&k!==item.k)&&!x.multi;
+  let ok=item.bonus==='zen'?true:reqCheck(x,s);return{x,ok,own,taken}});
+}
+function renderLevels(){
+ const id=S.hero,h=HEROES[id],p=plan(),{levels,tiers}=slotsFor(h,p);const box=$('levels');box.innerHTML='';
+ const T=h.tier+p.t;
+ const mk=(title,feature,items,L,TT,isLvl)=>{const d=document.createElement('div');d.className='lvl';
+  d.innerHTML='<div class="head"><h3>'+esc(title)+'</h3>'+(isLvl?'<span class="note">TW W'+CLS[h.cls].hd+' · '+CLS[h.cls].sk+' + IN Ränge</span>':'')+'</div>'+(feature?'<div class="feat">'+esc(feature)+'</div>':'');
+  if(isLvl){const r=document.createElement('div');r.className='row';const L0=L;
+   r.innerHTML='<span class="note">Bevorzugte Klasse:</span>';
+   ['hp','skill'].forEach(v=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=v==='hp'?'+1 TP':'+1 Fertigkeitsrang';b.setAttribute('aria-pressed',(p.fcb[L0]||'hp')===v);b.style.fontWeight=(p.fcb[L0]||'hp')===v?'700':'400';b.onclick=()=>{p.fcb[L0]=v;save();renderAll()};r.appendChild(b)});
+   d.appendChild(r)}
+  items.forEach(it=>{const w=document.createElement('div');w.style.display='grid';w.style.gap='4px';
+   const lab=document.createElement('label');lab.className='f';lab.textContent=it.label;
+   if(it.type==='feat'){const sel=document.createElement('select');sel.innerHTML='<option value="">– noch offen –</option>';
+     const opts=featOptions(it,id,L,TT);
+     opts.forEach(o=>{const op=document.createElement('option');op.value=o.x.id;op.textContent=o.x.n+(o.own?' (schon vorhanden)':o.taken?' (schon geplant)':o.ok===true?'':' – fehlt: '+o.ok);op.disabled=o.own||o.taken;sel.appendChild(op)});
+     sel.value=p.feat[it.k]||'';sel.onchange=()=>{p.feat[it.k]=sel.value;save();renderAll()};lab.appendChild(sel);w.appendChild(lab);
+     const v=p.feat[it.k];if(v){const o=opts.find(o=>o.x.id===v);const t=document.createElement('div');t.className='why';
+      t.innerHTML=esc(FB[v].t)+(o&&o.ok!==true?' <span class="tag bad">Voraussetzung fehlt: '+esc(o.ok)+'</span>':' <span class="tag ok">möglich</span>');w.appendChild(t)}}
+   else if(it.type==='abil'){const a=p.abil[it.k]||{};const sel=document.createElement('select');sel.innerHTML='<option value="">– Attribut –</option>'+Object.entries(ATTR).map(([k,v])=>'<option value="'+k+'">'+v+'</option>').join('');
+     sel.value=a.attr||'';const cb=document.createElement('label');cb.style.fontSize='.85rem';cb.innerHTML='<input type="checkbox"'+(a.up?' checked':'')+'> Modifikator steigt dadurch'+(it.two?' um +1':'');
+     sel.onchange=()=>{p.abil[it.k]={attr:sel.value,up:it.two?true:!!(a.up)};save();renderAll()};
+     cb.querySelector('input').onchange=e=>{p.abil[it.k]={attr:sel.value,up:e.target.checked};save();renderAll()};
+     lab.appendChild(sel);w.appendChild(lab);w.appendChild(cb);
+     const t=document.createElement('div');t.className='why';t.textContent=it.two?'+2 auf einen Attributswert erhöht den Modifikator immer um +1.':'+1 erhöht den Modifikator nur, wenn der Wert dadurch gerade wird (z. B. 15 → 16).';w.appendChild(t)}
+   else{const inp=document.createElement('input');inp.type='text';inp.placeholder='Name eintragen';const store=it.type==='path'?p.path:(p.text=p.text||{});inp.value=store[it.k]||'';inp.onchange=()=>{store[it.k]=inp.value;save();renderResult()};lab.appendChild(inp);w.appendChild(lab)}
+   d.appendChild(w)});
+  box.appendChild(d)};
+ levels.forEach(lv=>mk('Charakterstufe '+lv.L+' · '+CLS[h.cls].n+' '+lv.cl,lv.feature,lv.items,lv.L,h.tier+p.t,true));
+ tiers.forEach(tv=>mk('Legendenstufe '+tv.T+' ('+PATH[h.path].n+')',tv.feature+(tv.feature?' · ':'')+'+2 Legendäre Kraft, +'+PATH[h.path].hp+' TP',tv.items,h.lvl+p.n,tv.T,false));
+ if(p.t>0){const n=document.createElement('p');n.className='note';n.textContent='Legendenstufen gibt es nur durch Prüfungen im Spiel. Wann das passiert, entscheidet die Spielleitung.';box.appendChild(n)}
+}
+function renderSkills(){
+ const id=S.hero,h=HEROES[id],H=cur(),p=plan(),C=CLS[h.cls];
+ let budget=0;for(let i=1;i<=p.n;i++){budget+=Math.max(1,C.sk+H.m.in);if(p.fcb[h.lvl+i]==='skill')budget++}
+ const used=Object.values(p.sk).reduce((a,b)=>a+b,0);
+ $('skillBudget').innerHTML='Neue Ränge: <b class="num">'+budget+'</b> · verteilt: <b class="num">'+used+'</b> · übrig: <b class="num '+(budget-used<0?'bad':'')+'">'+(budget-used)+'</b>';
+ const tb=$('skills');tb.innerHTML='';
+ h.skills.forEach(([n,b])=>{const v=p.sk[n]||0;const tr=document.createElement('tr');
+  tr.innerHTML='<td>'+esc(n)+'</td><td class="n">'+sg(b)+'</td><td></td><td class="n'+(v?' up':'')+'">'+sg(b+v)+'</td>';
+  const st=document.createElement('span');st.className='step';
+  const minus=document.createElement('button');minus.type='button';minus.textContent='−';minus.setAttribute('aria-label',n+' Rang weniger');minus.disabled=v<=0;
+  minus.onclick=()=>{p.sk[n]=v-1;if(!p.sk[n])delete p.sk[n];save();renderSkills();renderResult()};
+  const plus=document.createElement('button');plus.type='button';plus.textContent='+';plus.setAttribute('aria-label',n+' Rang mehr');plus.disabled=v>=p.n||used>=budget;
+  plus.onclick=()=>{p.sk[n]=v+1;save();renderSkills();renderResult()};
+  const lab=document.createElement('span');lab.className='num';lab.textContent=v;
+  st.append(minus,lab,plus);tr.children[2].appendChild(st);tb.appendChild(tr)});
+}
+function renderResult(){
+ const id=S.hero,h=HEROES[id];const A=compute(id,'A'),B=compute(id,'B');
+ const nA=S.h[id].plans.A.n,nB=S.h[id].plans.B.n;
+ const rows=[];
+ const cmp=(lab,now,a,b,fmt=sg)=>rows.push('<tr><td>'+lab+'</td><td class="n">'+fmt(now)+'</td><td class="n'+(a!==now?' up':'')+'">'+fmt(a)+'</td><td class="n'+(b!==now?' up':'')+'">'+fmt(b)+'</td></tr>');
+ const id0=v=>String(v);
+ cmp('Charakterstufe',h.lvl,A.L,B.L,id0);
+ cmp('Legendenstufe',h.tier,A.T,B.T,id0);
+ cmp('Grund-Angriffsbonus',h.cur.bab,A.bab,B.bab);
+ cmp('Zähigkeit',h.cur.fort,A.fort,B.fort);
+ cmp('Reflex',h.cur.ref,A.ref,B.ref);
+ cmp('Wille',h.cur.will,A.will,B.will);
+ cmp('Initiative',h.cur.init,A.init,B.init);
+ rows.push('<tr><td>Trefferpunkte</td><td class="n">–</td><td class="n up">+'+A.hp+'</td><td class="n up">+'+B.hp+'</td></tr>');
+ cmp('Legendäre Kraft/Tag',h.cur.lk,A.lk,B.lk,id0);
+ if(h.cur.sr)cmp('Zauberresistenz überwinden',h.cur.sr,A.sr,B.sr);
+ rows.push('<tr><td>'+esc(h.atk.n)+'</td><td class="n">'+sg(h.atk.a)+' · '+esc(h.atk.d)+'</td><td class="n'+(A.atk!==h.atk.a?' up':'')+'">'+sg(A.atk)+' · '+esc(A.dmg)+'</td><td class="n'+(B.atk!==h.atk.a?' up':'')+'">'+sg(B.atk)+' · '+esc(B.dmg)+'</td></tr>');
+ rows.push('<tr><td>Zusätze im Kampf</td><td></td><td>'+A.extra.map(esc).join('<br>')+'</td><td>'+B.extra.map(esc).join('<br>')+'</td></tr>');
+ rows.push('<tr><td>Neue Klassenmerkmale</td><td></td><td>'+(A.feat.map(esc).join('<br>')||'–')+'</td><td>'+(B.feat.map(esc).join('<br>')||'–')+'</td></tr>');
+ rows.push('<tr><td>Gewählt</td><td></td><td>'+(A.chosen.map(esc).join('<br>')||'–')+'</td><td>'+(B.chosen.map(esc).join('<br>')||'–')+'</td></tr>');
+ const changed=h.skills.filter(([n])=>A.skills[n]!==B.skills[n]||A.skills[n]!==h.skills.find(x=>x[0]===n)[1]);
+ changed.forEach(([n,b])=>cmp(esc(n),b,A.skills[n],B.skills[n]));
+ $('result').innerHTML=rows.join('');
+}
+function renderBase(){
+ const id=S.hero,H=cur();const M=$('mods');M.innerHTML='';
+ for(const a in ATTR){const l=document.createElement('label');l.className='f';l.innerHTML=ATTR[a]+'-Modifikator <input type="number" value="'+H.m[a]+'">';
+  l.querySelector('input').onchange=e=>{H.m[a]=+e.target.value||0;save();renderAll()};M.appendChild(l)}
+ const O=$('owned');O.innerHTML='';
+ F.filter(x=>x.h==='*'||x.h.split(',').includes(id)).forEach(x=>{const l=document.createElement('label');
+  l.innerHTML='<input type="checkbox"'+(H.owned.includes(x.id)?' checked':'')+'> '+esc(x.n);
+  l.querySelector('input').onchange=e=>{if(e.target.checked){if(!H.owned.includes(x.id))H.owned.push(x.id)}else H.owned=H.owned.filter(y=>y!==x.id);save();renderAll()};O.appendChild(l)});
+}
+function renderAll(){renderHeroes();renderLevels();renderSkills();renderResult();renderBase()}
+
+$('nLvl').onchange=e=>{plan().n=+e.target.value;const h=HEROES[S.hero];for(const k in plan().sk)plan().sk[k]=Math.min(plan().sk[k],plan().n);save();renderAll()};
+$('nTier').onchange=e=>{plan().t=+e.target.value;save();renderAll()};
+$('copyAB').onclick=()=>{const H=cur();H.plans.B=JSON.parse(JSON.stringify(H.plans.A));H.cur='B';save();renderAll()};
+$('resetPlan').onclick=()=>{const H=cur();H.plans[H.cur]=blankPlan();save();renderAll()};
+let armed=false;$('resetHero').onclick=e=>{if(!armed){armed=true;e.target.textContent='Wirklich zurücksetzen?';setTimeout(()=>{armed=false;e.target.textContent='Diesen Helden auf Startwerte zurücksetzen'},3000);return}S.h[S.hero]=freshHero(S.hero);save();renderAll()};
+renderAll();
+</script>
+</body>
+</html>
