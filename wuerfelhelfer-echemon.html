@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Echemons Würfelhelfer</title>
+<style>
+/* Layout: eine Spalte wie ein Spielblock am Tisch; oben die Kraftleiste, darunter Angriff, Proben, Fähigkeiten, Werte */
+:root{
+  --bg:#EDEFEA; --panel:#FAFBF8; --ink:#1B2230; --muted:#5B6474; --line:#C9CEC6;
+  --accent:#8A2F2A; --accent-ink:#FFFFFF; --brass:#9A6E1C; --chip:#E1E6DF;
+  --good:#2E7A4B; --warn:#A8461F; --crit:#7A2E8C;
+  --f-display:"Spectral SC", Georgia, serif;
+  --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#E59A86; --accent-ink:#0F1520; --brass:#D9AE5C; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --crit:#CF8BE0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#E59A86; --accent-ink:#0F1520; --brass:#D9AE5C; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --crit:#CF8BE0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+h1,h2{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance}
+h1{font-size:1.6rem;letter-spacing:.01em}
+h2{font-size:1.15rem;letter-spacing:.02em}
+.sub{color:var(--muted);font-size:.92rem}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+section,.top{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px}
+.top{grid-template-columns:1fr auto;align-items:center}
+.res-wrap{display:grid;gap:10px}.lk{display:grid;gap:6px;justify-items:end}
+.lk .label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.pips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pip{width:22px;height:22px;border-radius:50%;border:2px solid var(--brass);background:var(--brass);cursor:pointer;padding:0}
+.pip.used{background:transparent}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);width:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+.seg button,.chip{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:7px 13px;font-size:.95rem}
+.seg button[aria-pressed="true"],.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip small{opacity:.8;margin-left:4px;font-family:var(--f-num);font-size:.8rem}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:8px 14px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:5px 10px;font-size:.88rem}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.atk{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.atk:first-child{border-top:none}
+.atk .big{font-family:var(--f-num);font-size:1.5rem;font-weight:700;color:var(--accent);min-width:3.2ch}
+.atk .dmg{font-family:var(--f-num);font-size:1rem}
+.why{grid-column:1/-1;font-size:.85rem;color:var(--muted)}
+.sneak{color:var(--crit);font-weight:700}
+.log{display:grid;gap:8px}
+.res{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;background:var(--bg)}
+.res .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.res .total{font-family:var(--f-num);font-size:1.3rem;font-weight:700}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin-left:6px}
+.tag.crit{color:var(--crit)} .tag.nat1{color:var(--warn)} .tag.surge{color:var(--brass)}
+.mut{font-size:.86rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.check{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--chip)}
+.check .num{font-weight:700}
+.ability{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:6px}
+.ability .head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+summary{font-family:var(--f-display);font-weight:700;font-size:1.1rem;cursor:pointer}
+.form{display:grid;gap:12px;margin-top:12px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+label.f{display:grid;gap:3px;font-size:.82rem;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0}
+textarea{font-family:var(--f-num);font-size:.8rem;min-height:90px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left;vertical-align:middle}
+th{font-weight:500;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+td input,td select{padding:4px 6px}
+.note{font-size:.85rem;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.9rem}
+@media (prefers-reduced-motion:no-preference){.res{animation:pop .18s ease-out}@keyframes pop{from{transform:translateY(-3px)}to{transform:none}}}
+.wrap>*,details,.form>*{min-width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="hName">Echemon</h1>
+      <div class="sub" id="hSub">Tiefling · Kampfmagus 8 · Streiter 2 · Irori</div>
+    </div>
+    <div class="lk">
+      <span class="label">Legendäre Kraft</span>
+      <div class="pips" id="pipsLk"></div>
+      <span class="label">Arkaner Vorrat</span>
+      <div class="pips" id="pipsPool"></div>
+      <button class="btn ghost small" id="rest" type="button">Rast: alles auffüllen</button>
+    </div>
+  </header>
+
+  <section aria-labelledby="t-atk">
+    <h2 id="t-atk">Angriff</h2>
+    <div class="row seg" id="weapons" role="group" aria-label="Waffe"></div>
+    <div class="row seg" id="grip" role="group" aria-label="Griff"></div>
+    <div class="row seg" id="mode" role="group" aria-label="Art des Angriffs">
+      <button type="button" data-mode="single" aria-pressed="false">Ein Angriff</button>
+      <button type="button" data-mode="full" aria-pressed="true">Voller Angriff</button>
+    </div>
+    <div class="row" id="sits"><span class="lbl">Was trifft gerade zu?</span></div>
+    <div class="row" id="spellRow"><span class="lbl">Zauber durch die Klinge</span></div>
+    <div class="row">
+      <label class="f" style="width:9rem">Sonstiges Angriff<input id="xAtk" type="number" value="0" inputmode="numeric"></label>
+      <label class="f" style="width:9rem">Sonstiges Schaden<input id="xDmg" type="number" value="0" inputmode="numeric"></label>
+    </div>
+    <div id="hints"></div>
+    <div id="attacks"></div>
+    <div class="row"><button class="btn" id="rollAll" type="button">Alle Angriffe würfeln</button></div>
+    <div class="log" id="atkLog" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t-sp">
+    <h2 id="t-sp">Zauberplätze</h2>
+    <div id="slots" style="display:grid;gap:8px"></div>
+    <p class="note" id="dcLine"></p>
+  </section>
+
+  <section aria-labelledby="t-chk">
+    <h2 id="t-chk">Proben und Rettungswürfe</h2>
+    <div class="grid2" id="checks"></div>
+    <div class="log" id="chkLog" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t-ab">
+    <h2 id="t-ab">Fähigkeiten</h2>
+    <div id="abilities" style="display:grid;gap:8px"></div>
+  </section>
+
+  <details id="settings">
+    <summary>Werte bearbeiten</summary>
+    <div class="form">
+      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg einfach anpassen. Die Werte gelten, bis die Seite neu geladen wird. Zum Aufheben unten „Werte kopieren“ tippen und den Text sichern; später einfügen und „Laden“ tippen.</p>
+      <div class="fields">
+        <label class="f">Name<input id="sName"></label>
+        <label class="f">Untertitel<input id="sSub"></label>
+        <label class="f">Grund-Angriffsbonus<input id="sGab" type="number"></label>
+        <label class="f">Stärke-Modifikator<input id="sSt" type="number"></label>
+        <label class="f">Geschicklichkeit-Mod.<input id="sGe" type="number"></label>
+        <label class="f">Intelligenz-Mod.<input id="sInt" type="number"></label>
+        <label class="f">Zauberstufe<input id="sCl" type="number"></label>
+        <label class="f">Legendäre Kraft pro Tag<input id="sLk" type="number"></label>
+        <label class="f">Legendenstufe<input id="sTier" type="number"></label>
+        <label class="f">Schubwürfel (Seiten)<input id="sSurge" type="number"></label>
+        <label class="f">Arkaner Vorrat<input id="sPool" type="number"></label>
+        <label class="f">Vorrat: Waffenbonus<input id="sPoolEnh" type="number"></label>
+        <label class="f">Stufe von Irabeths Schwert
+          <select id="sLeg"><option value="1">1 · Die Narbe</option><option value="2">2 · Die Entschlossenheit</option><option value="3">3 · Kenabres brennt nicht mehr</option></select></label>
+      </div>
+      <div>
+        <div class="lbl">Waffen</div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Name</th><th>Attribut</th><th>Würfel</th><th>Stärke ×</th><th>Kritisch ab</th><th>×</th><th>Verbess.</th><th>Sonst. Angr.</th><th>Zweihändig möglich</th><th>Fernkampf</th><th>Legendär</th><th></th></tr></thead>
+          <tbody id="wTable"></tbody>
+        </table></div>
+        <button class="btn ghost small" id="addW" type="button">Waffe hinzufügen</button>
+        <p class="note">„Legendär“: Die Stufe von Irabeths Schwert setzt Verbesserung und Bedrohungsbereich (Stufe 1: +1, 19–20 · Stufe 2: +2, 18–20 · Stufe 3: +3, 18–20). „Sonst. Angr.“ ist zum Beispiel Waffenfokus.</p>
+      </div>
+      <div>
+        <div class="lbl">Zauber für den Zauberschlag</div>
+        <div id="spTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addSp" type="button">Zauber hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Zauberplätze pro Tag (1. bis 4. Grad)</div>
+        <div class="fields" id="slotFields"></div>
+      </div>
+      <div>
+        <div class="lbl">Proben</div>
+        <div id="cTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addC" type="button">Probe hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Fähigkeiten mit begrenzten Einsätzen</div>
+        <div id="aTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addA" type="button">Fähigkeit hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Sichern und übertragen</div>
+        <p class="note">Kopiere den Text, um die Werte auf ein anderes Gerät zu bringen oder aufzuheben. Zum Laden den Text einfügen und „Laden“ tippen.</p>
+        <textarea id="io" aria-label="Gesicherte Werte"></textarea>
+        <div class="row">
+          <button class="btn small" id="exp" type="button">Werte kopieren</button>
+          <button class="btn ghost small" id="imp" type="button">Laden</button>
+          <button class="btn ghost small" id="reset" type="button">Auf Echemon zurücksetzen</button>
+        </div>
+      </div>
+    </div>
+  </details>
+  <p class="note" style="text-align:center">Würfelhelfer für Pathfinder 1. Die Spielleitung hat das letzte Wort.</p>
+</div>
+<script>
+const KEY='echemon-wuerfelhelfer-v1';
+const DEFAULT={
+  name:'Echemon', sub:'Tiefling · Kampfmagus 8 · Streiter 2 · Irori',
+  gab:6, st:2, ge:3, int:4, cl:8, lkMax:7, tier:2, surge:6, pool:12, poolEnh:2, leg:2,
+  weapons:[
+    {name:'Narbe (Irabeths Schwert)',ab:'st',dice:'1W8',strMul:1,critLow:19,critMul:2,enh:1,atk:1,ranged:false,leg:true,twoHand:true},
+    {name:'Krummsäbel +1',ab:'st',dice:'1W6',strMul:1,critLow:18,critMul:2,enh:1,atk:0,ranged:false,leg:false,twoHand:true},
+    {name:'Dolch (geworfen)',ab:'ge',dice:'1W4',strMul:1,critLow:19,critMul:2,enh:0,atk:1,ranged:true,leg:false}
+  ],
+  spells:[{name:'Schockgriff',grade:1,dice:'5W6',type:'Elektrizität'}],
+  spell:0,
+  slots:[5,5,3,0], slotsUsed:[0,0,0,0],
+  checks:[
+    {name:'Initiative',b:4},{name:'Reflex',b:6},{name:'Wille',b:7},{name:'Zähigkeit',b:9},
+    {name:'Konzentration',b:12},{name:'Konz. defensiv zaubern',b:16},{name:'Konz. in Kampfzauberei',b:14},
+    {name:'Wissen (Die Ebenen)',b:14},{name:'Zauberkunde',b:10},{name:'Handwerk (Schmied)',b:11},
+    {name:'Einschüchtern',b:7},{name:'KMB (Manöver)',b:8}
+  ],
+  abilities:[
+    {name:'Dunkelheit',max:1,per:'Tag',used:0,text:'Zauberähnliche Fähigkeit des Tieflings.'}
+  ],
+  sits:{flank:false,pool:false,poolKeen:false,strike:false,acc:false,pa:false,combat:false,low:false,charge:false,bless:false,haste:false,prone:false,sudden:false,unbowed:false,spellstrike:false},
+  weapon:0, mode:'full', grip:'one', lkUsed:0, poolUsed:0
+};
+const LEG=[null,{enh:1,crit:19},{enh:2,crit:18},{enh:3,crit:18}];
+let S;
+function migrate(){S.sits=Object.assign({},DEFAULT.sits,S.sits);S.weapons.forEach(w=>{if(w.twoHand===undefined)w.twoHand=!w.ranged});if(!S.grip)S.grip='one'}
+function load(){S=structuredClone(DEFAULT)}
+function save(){}
+const $=id=>document.getElementById(id);
+const sg=n=>(n>=0?'+':'−')+Math.abs(n);
+const rnd=s=>1+Math.floor(Math.random()*s);
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function parseDice(t){const m=String(t).toUpperCase().replace('D','W').match(/(\d*)W(\d+)/);return m?{n:+(m[1]||1),s:+m[2]}:{n:0,s:6}}
+function rollDice(n,s){let a=[];for(let i=0;i<n;i++)a.push(rnd(s));return a}
+const sum=x=>x.reduce((p,q)=>p+q,0);
+let toastT;function toast(m){let el=document.querySelector('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800)}
+
+const paPen=()=>1+Math.floor(S.gab/4);
+const isTwo=w=>S.grip==='two'&&w.twoHand&&!w.ranged;
+const paDmg=w=>isTwo(w)?Math.floor(2*paPen()*1.5):2*paPen();
+const keenLow=c=>Math.max(2,2*c-21);
+const strikeDmg=()=>1+Math.floor(S.cl/5);
+function SITS(){return [
+  {k:'combat',t:'Kampfzauberei',h:'−2, dazu ein Zauber',full:true,oneHand:true},
+  {k:'flank',t:'In der Zange',h:'+2',melee:true},
+  {k:'pool',t:'Vorrat: Waffe +'+S.poolEnh,h:'1 Vorrat, 1 Minute',excl:'poolKeen'},
+  {k:'poolKeen',t:'Vorrat: Waffe +'+Math.max(0,S.poolEnh-1)+' und scharf',h:'Bedrohungsbereich doppelt, 1 Vorrat',excl:'pool'},
+  {k:'acc',t:'Arkane Genauigkeit',h:'+'+S.int+', 1 Vorrat, schnell'},
+  {k:'strike',t:'Arkaner Schlag',h:'+'+strikeDmg()+' Schaden, schnell'},
+  {k:'pa',t:'Heftiger Angriff',h:'−'+paPen()+' / +'+paDmg(weapon()),melee:true},
+  {k:'low',t:'Unter 1/3 der TP',h:'Narbe +2/+2',legMin:2},
+  {k:'charge',t:'Sturmangriff',h:'+2, ein Angriff',melee:true},
+  {k:'bless',t:'Segnung / Moral',h:'+1'},
+  {k:'haste',t:'Hast',h:'+1, ein Angriff mehr'},
+  {k:'prone',t:'Ich liege',h:'−4',melee:true},
+  {k:'sudden',t:'Plötzlicher Angriff',h:'1 Kraft, schnell',melee:true},
+  {k:'unbowed',t:'Unverzagte Klinge',h:'1 Kraft',legMin:2,needs:'low'}
+]}
+
+function weapon(){return S.weapons[S.weapon]||S.weapons[0]}
+function effWeapon(w){const e=Object.assign({},w);if(w.leg){const L=LEG[S.leg]||LEG[1];e.enh=L.enh;e.critLow=Math.min(w.critLow,L.crit)}return e}
+function avail(o,w){if(o.melee&&w.ranged)return false;if(o.oneHand&&isTwo(w))return false;if(o.full&&S.mode!=='full')return false;if(o.legMin&&!(w.leg&&S.leg>=o.legMin))return false;if(o.needs&&!S.sits[o.needs])return false;return true}
+
+function compute(){
+  const w0=weapon(),w=effWeapon(w0);const s=S.sits;const melee=!w.ranged;
+  const on=k=>{const o=SITS().find(x=>x.k===k);return s[k]&&o&&avail(o,w0)};
+  const abil=w.ab==='ge'?S.ge:S.st;
+  let mods=[];const add=(v,t)=>{if(v)mods.push([v,t])};
+  const two=isTwo(w0);
+  const poolRaw=on('pool')?S.poolEnh:(on('poolKeen')?Math.max(0,S.poolEnh-1):0);
+  const poolEnh=Math.max(0,Math.min(poolRaw,5-w.enh));
+  const keen=on('poolKeen');if(keen)w.critLow=Math.min(w.critLow,keenLow(w0.critLow));
+  add(S.gab,'Grund-Angriffsbonus');add(abil,w.ab==='ge'?'Geschicklichkeit':'Stärke');add(w.enh,'Verbesserung');add(w.atk||0,'Waffenfokus u. a.');
+  add(poolEnh,'Arkaner Vorrat');
+  if(on('acc'))add(S.int,'Arkane Genauigkeit');
+  if(on('flank'))add(2,'Zange');
+  if(on('combat'))add(-2,'Kampfzauberei');
+  if(on('pa'))add(-paPen(),'Heftiger Angriff');
+  if(on('low'))add(2,'Entschlossenheit');
+  if(on('charge'))add(2,'Sturmangriff');
+  if(on('bless'))add(1,'Moral');
+  if(on('haste'))add(1,'Hast');
+  if(on('prone'))add(-4,'liegend');
+  const x=+$('xAtk').value||0;add(x,'Sonstiges');
+  const base=mods.reduce((a,b)=>a+b[0],0);
+  let dm=[];const addD=(v,t)=>{if(v)dm.push([v,t])};
+  addD(Math.floor(S.st*(two?1.5:w.strMul)),two?'Stärke ×1,5':'Stärke');addD(w.enh+poolEnh,'Verbesserung');
+  if(on('strike'))addD(strikeDmg(),'Arkaner Schlag');
+  if(on('pa'))addD(paDmg(w0),two?'Heftiger Angriff ×1,5':'Heftiger Angriff');
+  if(on('low'))addD(2,'Entschlossenheit');
+  addD(+$('xDmg').value||0,'Sonstiges');
+  const stat=dm.reduce((a,b)=>a+b[0],0);
+  const sp=(s.spellstrike&&melee&&S.spells[S.spell])?S.spells[S.spell]:null;
+  const single=S.mode==='single'||on('charge');
+  let list=[];
+  let iters=[0];if(!single){for(let g=S.gab-5;g>0;g-=5)iters.push(S.gab-g)}
+  if(!single&&on('haste'))iters.splice(1,0,0);
+  iters.forEach((pen,i)=>list.push({label:(i+1)+'. Angriff',bonus:base-pen,pen,why:mods,dice:w.dice,stat,dWhy:dm,critLow:w.critLow,critMul:w.critMul,spell:i===0?sp:null}));
+  if(on('unbowed'))list.push({label:'Unverzagte Klinge',bonus:base,pen:0,why:mods,dice:w.dice,stat,dWhy:dm,critLow:w.critLow,critMul:w.critMul,note:'1 Legendäre Kraft'});
+  if(on('sudden'))list.push({label:'Plötzlicher Angriff',bonus:base+S.tier,pen:0,why:mods.concat([[S.tier,'Legendenstufe']]),dice:w.dice,stat,dWhy:dm,critLow:w.critLow,critMul:w.critMul,twice:true,note:'zweimal würfeln, das bessere zählt'});
+  let hints=[];
+  const swift=['strike','acc','sudden'].filter(on);
+  if(swift.length>1)hints.push('Nur eine schnelle Aktion pro Runde: '+swift.map(k=>SITS().find(o=>o.k===k).t).join(', ')+' gehen nicht zusammen.');
+  if(two)hints.push('Zweihändig: Stärke zählt ×1,5 auf den Schaden'+(on('pa')?', Heftiger Angriff gibt +'+paDmg(w0)+' Schaden':'')+'. Kampfzauberei geht nur einhändig, die zweite Hand muss frei sein.');
+  if(keen)hints.push('Scharf: Der Bedrohungsbereich der Grundwaffe verdoppelt sich ('+w0.critLow+'–20 wird '+keenLow(w0.critLow)+'–20). Mit dem Bedrohungsbereich der Legendenwaffe addiert sich das nicht, es zählt der bessere Wert.');
+  if(on('combat'))hints.push('Kampfzauberei: Echemon wirkt in diesem Zug zusätzlich einen Zauber. Konzentration '+sg(S.cl+S.int+2)+', defensiv '+sg(S.cl+S.int+6)+'.');
+  if(sp&&!on('combat')&&S.mode==='full')hints.push('Zauberschlag ohne Kampfzauberei: Zauber als Standardaktion wirken, dann ein einzelner Angriff mit der Klinge. Wähle „Ein Angriff“.');
+  if(sp)hints.push(sp.name+' wirkt mit dem ersten Treffer. Bei einem kritischen Treffer verdoppelt sich auch der Zauberschaden. Verfehlt der Angriff, bleibt die Ladung in der Hand.');
+  if(on('charge')&&S.mode==='full')hints.push('Beim Sturmangriff gibt es nur einen Angriff. Danach −2 auf die RK bis zum nächsten Zug.');
+  return {list,hints};
+}
+const whyText=(arr,pen)=>arr.map(([v,t])=>sg(v)+' '+t).join(' · ')+(pen?' · −'+pen+' Folgeangriff':'');
+
+function pipsFor(id,max,used,label,setUsed){const p=$(id);p.innerHTML='';
+  for(let i=0;i<max;i++){const b=document.createElement('button');b.type='button';b.className='pip'+(i<used?' used':'');
+    b.setAttribute('aria-label',(i<used?'verbraucht':'verfügbar')+': '+label+' '+(i+1));
+    b.onclick=()=>{setUsed(i<used?i:i+1);save();renderTop()};p.appendChild(b)}}
+function renderTop(){
+  $('hName').textContent=S.name;$('hSub').textContent=S.sub;
+  pipsFor('pipsLk',S.lkMax,S.lkUsed,'Legendäre Kraft',v=>S.lkUsed=v);
+  pipsFor('pipsPool',S.pool,S.poolUsed,'Arkaner Vorrat',v=>S.poolUsed=v);
+}
+function renderAttack(){
+  const W=$('weapons');W.innerHTML='';
+  S.weapons.forEach((w,i)=>{const b=document.createElement('button');b.type='button';b.textContent=w.name;b.setAttribute('aria-pressed',i===S.weapon);b.onclick=()=>{S.weapon=i;save();renderAttack()};W.appendChild(b)});
+  document.querySelectorAll('#mode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===S.mode));
+  const G=$('grip');G.innerHTML='';const wg=weapon();G.hidden=!(wg.twoHand&&!wg.ranged);
+  [['one','Einhändig'],['two','Zweihändig']].forEach(([v,t])=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-pressed',S.grip===v);b.onclick=()=>{S.grip=v;save();renderAttack()};G.appendChild(b)});
+  const w=weapon();const box=$('sits');box.querySelectorAll('.chip').forEach(c=>c.remove());
+  SITS().forEach(o=>{if(!avail(o,w))return;
+    const b=document.createElement('button');b.type='button';b.className='chip';b.setAttribute('aria-pressed',!!S.sits[o.k]);
+    b.innerHTML=esc(o.t)+'<small>'+esc(o.h)+'</small>';b.onclick=()=>{S.sits[o.k]=!S.sits[o.k];if(S.sits[o.k]&&o.excl)S.sits[o.excl]=false;save();renderAttack()};box.appendChild(b)});
+  const sr=$('spellRow');sr.querySelectorAll('.chip,select').forEach(c=>c.remove());
+  sr.hidden=!!w.ranged;
+  if(!w.ranged){
+    const b=document.createElement('button');b.type='button';b.className='chip';b.setAttribute('aria-pressed',!!S.sits.spellstrike);b.innerHTML='Zauberschlag<small>Zauber über die Klinge</small>';
+    b.onclick=()=>{S.sits.spellstrike=!S.sits.spellstrike;save();renderAttack()};sr.appendChild(b);
+    const sel=document.createElement('select');sel.id='spellSel';sel.setAttribute('aria-label','Zauber');sel.style.width='auto';
+    S.spells.forEach((p,i)=>{const o=document.createElement('option');o.value=i;o.textContent=p.name+' ('+p.grade+'. Grad, '+p.dice+')';if(i===S.spell)o.selected=true;sel.appendChild(o)});
+    sel.onchange=()=>{S.spell=+sel.value;save();renderAttack()};sr.appendChild(sel);
+  }
+  const {list,hints}=compute();
+  const H=$('hints');H.innerHTML='';hints.forEach(t=>{const p=document.createElement('p');p.className='note';p.textContent=t;H.appendChild(p)});
+  const A=$('attacks');A.innerHTML='';
+  list.forEach(a=>{
+    const d=document.createElement('div');d.className='atk';
+    const crit=a.critLow<20?a.critLow+'–20':'20';
+    d.innerHTML='<div class="big">'+sg(a.bonus)+'</div><div><div><b>'+esc(a.label)+'</b>'+(a.note?' <span class="mut">· '+esc(a.note)+'</span>':'')+'</div><div class="dmg">'+esc(a.dice)+(a.stat?sg(a.stat):'')+(a.spell?' <span class="sneak">+'+esc(a.spell.dice)+' '+esc(a.spell.type)+'</span>':'')+' <span class="mut">· kritisch '+crit+'/×'+a.critMul+'</span></div></div>';
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Würfeln';b.onclick=()=>rollAttack(a);d.appendChild(b);
+    const y=document.createElement('div');y.className='why';y.textContent='Angriff: '+whyText(a.why,a.pen)+'. Schaden: '+a.dice+(a.dWhy.length?' '+whyText(a.dWhy):'')+(a.spell?' · '+a.spell.name+' '+a.spell.dice:'');
+    d.appendChild(y);A.appendChild(d)});
+}
+function addResult(logId,node){const L=$(logId);L.prepend(node);while(L.children.length>6)L.lastChild.remove()}
+function surgeBtn(onSurge){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent='Legendärer Schub +1W'+S.surge+' (1 Kraft)';
+  b.onclick=()=>{if(S.lkUsed>=S.lkMax){toast('Keine Legendäre Kraft mehr übrig');return}S.lkUsed++;save();renderTop();const r=rnd(S.surge);b.remove();onSurge(r)};return b}
+function rollAttack(a){
+  const r1=rnd(20),r2=a.twice?rnd(20):0;const d20=Math.max(r1,r2);const threat=d20>=a.critLow;
+  const el=document.createElement('div');el.className='res';
+  let total=d20+a.bonus;
+  const dd=parseDice(a.dice);const wDice=rollDice(dd.n,dd.s);
+  const spd=a.spell?parseDice(a.spell.dice):null;const sDice=spd?rollDice(spd.n,spd.s):[];
+  const normal=sum(wDice)+a.stat+sum(sDice);
+  let critTxt='';
+  if(threat){const extra=[];for(let k=1;k<a.critMul;k++)extra.push(...rollDice(dd.n,dd.s));const sExtra=spd?rollDice(spd.n,spd.s):[];const conf=rnd(20)+a.bonus;
+    const critDmg=sum(wDice)+sum(extra)+a.stat*a.critMul+sum(sDice)+sum(sExtra);
+    critTxt='<div><span class="tag crit">Bedrohung</span> Bestätigungswurf: <b class="num">'+conf+'</b>. Trifft er die RK, ist es ein kritischer Treffer: <b class="num">'+critDmg+'</b> Schaden statt '+normal+'.</div>'}
+  const head=()=>'<div class="head"><span><b>'+esc(a.label)+'</b> · W20 = '+(a.twice?r1+' und '+r2+' → '+d20:d20)+(d20===20?' <span class="tag crit">natürliche 20</span>':'')+(d20===1?' <span class="tag nat1">natürliche 1: verfehlt</span>':'')+'</span><span class="total">'+total+'</span></div>';
+  const body='<div>Schaden: <b class="num">'+normal+'</b> <span class="mut">('+esc(a.dice)+' = '+wDice.join('+')+(a.stat?', '+sg(a.stat):'')+(a.spell?', '+esc(a.spell.name)+' '+sDice.join('+'):'')+')</span></div>'+critTxt;
+  el.innerHTML=head()+body;
+  if(d20!==20&&d20!==1)el.appendChild(surgeBtn(r=>{total+=r;el.innerHTML=head()+body+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+total+'</b></div>'}));
+  addResult('atkLog',el);
+}
+function renderSlots(){
+  const B=$('slots');B.innerHTML='';
+  S.slots.forEach((n,g)=>{if(!n)return;const d=document.createElement('div');d.className='ability';
+    d.innerHTML='<div class="head"><b>'+(g+1)+'. Grad</b><span class="mut">'+(n-S.slotsUsed[g])+' von '+n+' übrig</span></div><div class="pips" style="justify-content:flex-start"></div>';
+    const p=d.querySelector('.pips');const used=S.slotsUsed[g];
+    for(let i=0;i<n;i++){const b=document.createElement('button');b.type='button';b.className='pip'+(i<used?' used':'');b.setAttribute('aria-label',(g+1)+'. Grad, Platz '+(i+1)+(i<used?' verbraucht':' frei'));
+      b.onclick=()=>{S.slotsUsed[g]=i<used?i:i+1;save();renderSlots()};p.appendChild(b)}
+    B.appendChild(d)});
+  $('dcLine').textContent='Rettungswurf-SG der Zauber: 10 + Grad + '+S.int+' (1. Grad: '+(11+S.int)+', 2. Grad: '+(12+S.int)+', 3. Grad: '+(13+S.int)+'). Zauberrückruf holt einen gewirkten Zauber für Vorratspunkte in Höhe seines Grades zurück.';
+}
+function renderChecks(){
+  const C=$('checks');C.innerHTML='';
+  S.checks.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='check';b.innerHTML='<span>'+esc(c.name)+'</span><span class="num">'+sg(+c.b)+'</span>';
+    b.onclick=()=>{const d=rnd(20);let t=d+(+c.b);const el=document.createElement('div');el.className='res';
+      const h=()=>'<div class="head"><span><b>'+esc(c.name)+'</b> · W20 = '+d+' '+sg(+c.b)+'</span><span class="total">'+t+'</span></div>';
+      el.innerHTML=h();el.appendChild(surgeBtn(r=>{t+=r;el.innerHTML=h()+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+t+'</b></div>'}));addResult('chkLog',el)};C.appendChild(b)})
+}
+function spendCard(title,meta,text,res,cost,msg){
+  const d=document.createElement('div');d.className='ability';
+  d.innerHTML='<div class="head"><b>'+esc(title)+'</b><span class="mut">'+esc(meta)+'</span></div><div class="mut">'+text+'</div>';
+  const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Einsetzen';
+  b.onclick=()=>{const k=res==='lk'?['lkUsed','lkMax']:['poolUsed','pool'];if(S[k[0]]+cost>S[k[1]]){toast(res==='lk'?'Keine Legendäre Kraft mehr übrig':'Arkaner Vorrat leer');return}S[k[0]]+=cost;save();renderTop();toast(msg)};
+  d.querySelector('.head').appendChild(b);return d}
+function renderAbilities(){
+  const A=$('abilities');A.innerHTML='';
+  A.appendChild(spendCard('Arkaner Vorrat: Waffe verbessern','Schnelle Aktion · 1 Vorrat','Die Klinge erhält für 1 Minute +'+S.poolEnh+' Verbesserung (höchstens +5 insgesamt) oder +'+Math.max(0,S.poolEnh-1)+' und die Eigenschaft Scharf (Bedrohungsbereich verdoppelt). Danach im Angriff die passende Variante anhaken.','pool',1,'Waffe verbessert'));
+  A.appendChild(spendCard('Arkane Genauigkeit','Schnelle Aktion · 1 Vorrat','+'+S.int+' Einsichtsbonus auf Angriffe bis zum Ende der Runde. Danach im Angriff anhaken.','pool',1,'Arkane Genauigkeit aktiv'));
+  A.appendChild(spendCard('Plötzlicher Angriff (Streiter)','Schnelle Aktion · 1 Legendäre Kraft','Ein zusätzlicher Nahkampfangriff mit dem höchsten Bonus. Zweimal würfeln, das bessere Ergebnis zählt, +'+S.tier+' (Legendenstufe) auf den Angriff.','lk',1,'Plötzlicher Angriff'));
+  if(S.leg>=2)A.appendChild(spendCard('Unverzagte Klinge (Narbe)','1 Legendäre Kraft','Nur unter einem Drittel der TP: ein zusätzlicher Angriff mit dem höchsten Bonus. Er darf einen Zauberschlag tragen.','lk',1,'Unverzagte Klinge'));
+  S.abilities.forEach(a=>{const d=document.createElement('div');d.className='ability';
+    d.innerHTML='<div class="head"><b>'+esc(a.name)+'</b><span class="mut">'+(a.max-a.used)+' von '+a.max+' pro '+esc(a.per)+' übrig</span></div>'+(a.text?'<div class="mut">'+esc(a.text)+'</div>':'');
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Einsetzen';b.disabled=a.used>=a.max;
+    b.onclick=()=>{a.used=Math.min(a.max,a.used+1);save();renderAbilities()};d.querySelector('.head').appendChild(b);A.appendChild(d)});
+  const r=document.createElement('div');r.className='ability';r.innerHTML='<div class="head"><b>Immer aktiv</b></div><div class="mut">Resistenz 5 gegen Elektrizität, Feuer und Kälte. Dunkelsicht. Motiv erkennen gegen Böses +2. Dämonengezeichnet: Rettungswürfe gegen Dämonen wiederholen, solange er tot oder bewusstlos ist (laut Bogen).</div>';A.appendChild(r);
+}
+function renderSettings(){
+  [['sName','name'],['sSub','sub'],['sGab','gab'],['sSt','st'],['sGe','ge'],['sInt','int'],['sCl','cl'],['sLk','lkMax'],['sTier','tier'],['sSurge','surge'],['sPool','pool'],['sPoolEnh','poolEnh'],['sLeg','leg']].forEach(([id,k])=>$(id).value=S[k]);
+  const T=$('wTable');T.innerHTML='';
+  S.weapons.forEach((w,i)=>{const tr=document.createElement('tr');
+    const inp=(k,type,val,attrs='')=>'<td><input data-w="'+i+'" data-k="'+k+'" type="'+type+'" value="'+esc(val)+'" '+attrs+'></td>';
+    tr.innerHTML=inp('name','text',w.name)+'<td><select data-w="'+i+'" data-k="ab"><option value="st"'+(w.ab==='st'?' selected':'')+'>ST</option><option value="ge"'+(w.ab==='ge'?' selected':'')+'>GE</option></select></td>'+inp('dice','text',w.dice,'style="width:5em"')+'<td><select data-w="'+i+'" data-k="strMul">'+[0,0.5,1,1.5].map(v=>'<option value="'+v+'"'+(w.strMul==v?' selected':'')+'>'+v+'</option>').join('')+'</select></td>'+inp('critLow','number',w.critLow)+inp('critMul','number',w.critMul)+inp('enh','number',w.enh)+inp('atk','number',w.atk||0)+'<td><input data-w="'+i+'" data-k="twoHand" type="checkbox"'+(w.twoHand?' checked':'')+'></td><td><input data-w="'+i+'" data-k="ranged" type="checkbox"'+(w.ranged?' checked':'')+'></td><td><input data-w="'+i+'" data-k="leg" type="checkbox"'+(w.leg?' checked':'')+'></td><td><button type="button" class="btn ghost small" data-del="'+i+'">Entfernen</button></td>';
+    T.appendChild(tr)});
+  T.querySelectorAll('input,select').forEach(el=>el.onchange=()=>{const w=S.weapons[+el.dataset.w];const k=el.dataset.k;
+    w[k]=el.type==='checkbox'?el.checked:(el.type==='number'||k==='strMul'?+el.value:el.value);save();renderAll(false)});
+  T.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(S.weapons.length<2){toast('Mindestens eine Waffe muss bleiben');return}S.weapons.splice(+b.dataset.del,1);if(S.weapon>=S.weapons.length)S.weapon=0;save();renderAll()});
+  const P=$('spTable');P.innerHTML='';
+  S.spells.forEach((p,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:2 1 9rem" data-p="'+i+'" data-k="name" value="'+esc(p.name)+'" aria-label="Zauber"><input style="width:4.5rem" type="number" data-p="'+i+'" data-k="grade" value="'+p.grade+'" aria-label="Grad"><input style="width:5.5rem" data-p="'+i+'" data-k="dice" value="'+esc(p.dice)+'" aria-label="Schaden"><input style="flex:1 1 7rem" data-p="'+i+'" data-k="type" value="'+esc(p.type)+'" aria-label="Art"><button type="button" class="btn ghost small" data-pdel="'+i+'">Entfernen</button>';P.appendChild(r)});
+  P.querySelectorAll('input').forEach(el=>el.onchange=()=>{S.spells[+el.dataset.p][el.dataset.k]=el.dataset.k==='grade'?+el.value:el.value;save();renderAttack()});
+  P.querySelectorAll('[data-pdel]').forEach(b=>b.onclick=()=>{S.spells.splice(+b.dataset.pdel,1);S.spell=0;save();renderAll()});
+  const F=$('slotFields');F.innerHTML='';
+  S.slots.forEach((n,g)=>{const l=document.createElement('label');l.className='f';l.innerHTML=(g+1)+'. Grad<input type="number" value="'+n+'">';l.querySelector('input').onchange=e=>{S.slots[g]=+e.target.value;S.slotsUsed[g]=Math.min(S.slotsUsed[g],S.slots[g]);save();renderSlots()};F.appendChild(l)});
+  const C=$('cTable');C.innerHTML='';
+  S.checks.forEach((c,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:1 1 10rem" data-c="'+i+'" data-k="name" value="'+esc(c.name)+'" aria-label="Name der Probe"><input style="width:5rem" type="number" data-c="'+i+'" data-k="b" value="'+c.b+'" aria-label="Bonus"><button type="button" class="btn ghost small" data-cdel="'+i+'">Entfernen</button>';C.appendChild(r)});
+  C.querySelectorAll('input').forEach(el=>el.onchange=()=>{S.checks[+el.dataset.c][el.dataset.k]=el.dataset.k==='b'?+el.value:el.value;save();renderChecks()});
+  C.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{S.checks.splice(+b.dataset.cdel,1);save();renderAll()});
+  const A=$('aTable');A.innerHTML='';
+  S.abilities.forEach((a,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:1 1 9rem" data-a="'+i+'" data-k="name" value="'+esc(a.name)+'" aria-label="Name"><input style="width:4.5rem" type="number" data-a="'+i+'" data-k="max" value="'+a.max+'" aria-label="Einsätze"><select style="width:6rem" data-a="'+i+'" data-k="per" aria-label="pro"><option'+(a.per==='Tag'?' selected':'')+'>Tag</option><option'+(a.per==='Rast'?' selected':'')+'>Rast</option></select><input style="flex:2 1 12rem" data-a="'+i+'" data-k="text" value="'+esc(a.text||'')+'" aria-label="Kurzbeschreibung"><button type="button" class="btn ghost small" data-adel="'+i+'">Entfernen</button>';A.appendChild(r)});
+  A.querySelectorAll('input,select').forEach(el=>el.onchange=()=>{S.abilities[+el.dataset.a][el.dataset.k]=el.dataset.k==='max'?+el.value:el.value;save();renderAbilities()});
+  A.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{S.abilities.splice(+b.dataset.adel,1);save();renderAll()});
+}
+function renderAll(withSettings=true){renderTop();renderAttack();renderSlots();renderChecks();renderAbilities();if(withSettings)renderSettings()}
+
+[['sName','name',0],['sSub','sub',0],['sGab','gab',1],['sSt','st',1],['sGe','ge',1],['sInt','int',1],['sCl','cl',1],['sLk','lkMax',1],['sTier','tier',1],['sSurge','surge',1],['sPool','pool',1],['sPoolEnh','poolEnh',1],['sLeg','leg',1]].forEach(([id,k,n])=>{$(id).onchange=e=>{S[k]=n?+e.target.value:e.target.value;S.lkUsed=Math.min(S.lkUsed,S.lkMax);S.poolUsed=Math.min(S.poolUsed,S.pool);save();renderAll(false)}});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;save();renderAttack()});
+$('xAtk').oninput=renderAttack;$('xDmg').oninput=renderAttack;
+$('rollAll').onclick=()=>{const {list}=compute();[...list].reverse().forEach(a=>rollAttack(a))};
+$('rest').onclick=()=>{S.lkUsed=0;S.poolUsed=0;S.slotsUsed=S.slotsUsed.map(()=>0);S.abilities.forEach(a=>a.used=0);save();renderAll(false);toast('Ausgeruht: alles wieder voll')};
+$('addW').onclick=()=>{S.weapons.push({name:'Neue Waffe',ab:'st',dice:'1W6',strMul:1,critLow:20,critMul:2,enh:0,atk:0,ranged:false,leg:false,twoHand:true});save();renderAll()};
+$('addSp').onclick=()=>{S.spells.push({name:'Neuer Zauber',grade:1,dice:'1W6',type:''});save();renderAll()};
+$('addC').onclick=()=>{S.checks.push({name:'Neue Probe',b:0});save();renderAll()};
+$('addA').onclick=()=>{S.abilities.push({name:'Neue Fähigkeit',max:1,per:'Tag',used:0,text:''});save();renderAll()};
+$('exp').onclick=()=>{const t=JSON.stringify(S);$('io').value=t;if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('Werte kopiert'),()=>{$('io').select();toast('Text markiert: bitte kopieren')})}else{$('io').select()}};
+$('imp').onclick=()=>{try{const o=JSON.parse($('io').value);S=Object.assign(structuredClone(DEFAULT),o);migrate();save();renderAll();toast('Werte geladen')}catch(e){toast('Der Text ist kein gültiger Werte-Text')}};
+let resetArmed=false;$('reset').onclick=e=>{if(!resetArmed){resetArmed=true;e.target.textContent='Wirklich zurücksetzen?';setTimeout(()=>{resetArmed=false;e.target.textContent='Auf Echemon zurücksetzen'},3000);return}S=structuredClone(DEFAULT);save();renderAll();toast('Auf Echemon zurückgesetzt')};
+load();renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Avens Würfelhelfer</title>
+<style>
+/* Layout: eine Spalte wie ein Spielblock am Tisch; oben die Kraftleiste, darunter Angriff, Proben, Fähigkeiten, Werte */
+:root{
+  --bg:#E9EFEE; --panel:#FAFBF8; --ink:#1B2230; --muted:#5B6474; --line:#C9CEC6;
+  --accent:#1F6E73; --accent-ink:#FFFFFF; --brass:#8A5A2B; --chip:#E1E6DF;
+  --good:#2E7A4B; --warn:#A8461F; --crit:#7A2E8C;
+  --f-display:"Spectral SC", Georgia, serif;
+  --f-body:"Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#6FD0CF; --accent-ink:#0F1520; --brass:#E0B07A; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --crit:#CF8BE0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141922; --panel:#1C2330; --ink:#E6E9EF; --muted:#9AA3B2; --line:#323B4B;
+  --accent:#6FD0CF; --accent-ink:#0F1520; --brass:#E0B07A; --chip:#273041;
+  --good:#6FC593; --warn:#E8946C; --crit:#CF8BE0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 40px}
+.wrap{max-width:720px;margin:0 auto;display:grid;gap:16px}
+h1,h2{font-family:var(--f-display);font-weight:700;margin:0;text-wrap:balance}
+h1{font-size:1.6rem;letter-spacing:.01em}
+h2{font-size:1.15rem;letter-spacing:.02em}
+.sub{color:var(--muted);font-size:.92rem}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+section,.top{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:12px}
+.top{grid-template-columns:1fr auto;align-items:center}
+.res-wrap{display:grid;gap:10px}.lk{display:grid;gap:6px;justify-items:end}
+.lk .label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.pips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pip{width:22px;height:22px;border-radius:50%;border:2px solid var(--brass);background:var(--brass);cursor:pointer;padding:0}
+.pip.used{background:transparent}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lbl{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);width:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+.seg button,.chip{border:1px solid var(--line);background:var(--chip);border-radius:999px;padding:7px 13px;font-size:.95rem}
+.seg button[aria-pressed="true"],.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip small{opacity:.8;margin-left:4px;font-family:var(--f-num);font-size:.8rem}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:8px 14px;font-weight:700}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:5px 10px;font-size:.88rem}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--brass);outline-offset:2px}
+.atk{display:grid;grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.atk:first-child{border-top:none}
+.atk .big{font-family:var(--f-num);font-size:1.5rem;font-weight:700;color:var(--accent);min-width:3.2ch}
+.atk .dmg{font-family:var(--f-num);font-size:1rem}
+.why{grid-column:1/-1;font-size:.85rem;color:var(--muted)}
+.sneak{color:var(--crit);font-weight:700}
+.log{display:grid;gap:8px}
+.res{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;background:var(--bg)}
+.res .head{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.res .total{font-family:var(--f-num);font-size:1.3rem;font-weight:700}
+.tag{display:inline-block;font-size:.75rem;padding:2px 8px;border-radius:999px;border:1px solid currentColor;margin-left:6px}
+.tag.crit{color:var(--crit)} .tag.nat1{color:var(--warn)} .tag.surge{color:var(--brass)}
+.mut{font-size:.86rem;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.check{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:var(--chip)}
+.check .num{font-weight:700}
+.ability{border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:6px}
+.ability .head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+details{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px}
+summary{font-family:var(--f-display);font-weight:700;font-size:1.1rem;cursor:pointer}
+.form{display:grid;gap:12px;margin-top:12px}
+.fields{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px}
+label.f{display:grid;gap:3px;font-size:.82rem;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%;min-width:0}
+textarea{font-family:var(--f-num);font-size:.8rem;min-height:90px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:620px;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:5px 4px;text-align:left;vertical-align:middle}
+th{font-weight:500;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+td input,td select{padding:4px 6px}
+.note{font-size:.85rem;color:var(--muted)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.9rem}
+@media (prefers-reduced-motion:no-preference){.res{animation:pop .18s ease-out}@keyframes pop{from{transform:translateY(-3px)}to{transform:none}}}
+[hidden]{display:none!important}.wrap>*,details,.form>*{min-width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1 id="hName">Aven</h1>
+      <div class="sub" id="hSub">Undine · Zen-Bogenschütze 8 · Trickser 2 · Irori</div>
+    </div>
+    <div class="lk">
+      <span class="label">Legendäre Kraft</span>
+      <div class="pips" id="pipsLk"></div>
+      <span class="label">Ki-Vorrat</span>
+      <div class="pips" id="pipsKi"></div>
+      <button class="btn ghost small" id="rest" type="button">Rast: alles auffüllen</button>
+    </div>
+  </header>
+
+  <section aria-labelledby="t-atk">
+    <h2 id="t-atk">Schießen</h2>
+    <div class="row seg" id="weapons" role="group" aria-label="Bogen"></div>
+    <div class="row seg" id="mode" role="group" aria-label="Art des Angriffs">
+      <button type="button" data-mode="single" aria-pressed="false">Ein Schuss</button>
+      <button type="button" data-mode="full" aria-pressed="false">Voller Angriff</button>
+      <button type="button" data-mode="flurry" aria-pressed="true">Schlaghagel</button>
+    </div>
+    <div class="row seg" id="arrows" role="group" aria-label="Pfeile"></div>
+    <div class="row" id="sits"><span class="lbl">Was trifft gerade zu?</span></div>
+    <div class="row" id="powers"><span class="lbl">Ki und Legendäre Kraft (werden beim Würfeln abgebucht)</span></div>
+    <div class="row">
+      <label class="f" style="width:9rem">Sonstiges Angriff<input id="xAtk" type="number" value="0" inputmode="numeric"></label>
+      <label class="f" style="width:9rem">Sonstiges Schaden<input id="xDmg" type="number" value="0" inputmode="numeric"></label>
+    </div>
+    <div id="hints"></div>
+    <div id="attacks"></div>
+    <div class="row"><button class="btn" id="rollAll" type="button">Alle Pfeile würfeln</button></div>
+    <div class="log" id="atkLog" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t-chk">
+    <h2 id="t-chk">Proben und Rettungswürfe</h2>
+    <div class="grid2" id="checks"></div>
+    <div class="log" id="chkLog" aria-live="polite"></div>
+  </section>
+
+  <section aria-labelledby="t-ab">
+    <h2 id="t-ab">Fähigkeiten</h2>
+    <div id="abilities" style="display:grid;gap:8px"></div>
+  </section>
+
+  <details id="settings">
+    <summary>Werte bearbeiten</summary>
+    <div class="form">
+      <p class="note">Hier stehen alle Zahlen, mit denen der Helfer rechnet. Beim Stufenaufstieg einfach anpassen. Die Werte gelten, bis die Seite neu geladen wird. Zum Aufheben unten „Werte kopieren“ tippen und den Text sichern; später einfügen und „Laden“ tippen.</p>
+      <div class="fields">
+        <label class="f">Name<input id="sName"></label>
+        <label class="f">Untertitel<input id="sSub"></label>
+        <label class="f">Grund-Angriffsbonus<input id="sGab" type="number"></label>
+        <label class="f">Mönchsstufe (Schlaghagel)<input id="sLvl" type="number"></label>
+        <label class="f">Geschicklichkeit-Mod.<input id="sGe" type="number"></label>
+        <label class="f">Weisheit-Mod.<input id="sWe" type="number"></label>
+        <label class="f">Waffenfokus (Bogen)<input id="sWf" type="number"></label>
+        <label class="f">Waffenspezialisierung<input id="sWs" type="number"></label>
+        <label class="f">Waffenloser Schaden (Ki-Pfeile)<input id="sUnarmed"></label>
+        <label class="f">Ki-Vorrat<input id="sKi" type="number"></label>
+        <label class="f">Legendäre Kraft pro Tag<input id="sLk" type="number"></label>
+        <label class="f">Legendenstufe<input id="sTier" type="number"></label>
+        <label class="f">Schubwürfel (Seiten)<input id="sSurge" type="number"></label>
+        <label class="f">Material Durchschlagpfeile<input id="sMat"></label>
+        <label class="f">Stufe Bogen des vollkommenen Augenblicks
+          <select id="sLeg"><option value="1">1 · Die Stille</option><option value="2">2 · Die Annahme</option><option value="3">3 · Der vollkommene Schuss</option></select></label>
+      </div>
+      <div>
+        <div class="lbl">Bögen</div>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Name</th><th>Würfel</th><th>Kritisch ab</th><th>×</th><th>Verbess.</th><th>Fokus/Spez.</th><th>Legendär</th><th></th></tr></thead>
+          <tbody id="wTable"></tbody>
+        </table></div>
+        <button class="btn ghost small" id="addW" type="button">Bogen hinzufügen</button>
+        <p class="note">„Legendär“: Die Stufe des Bogens setzt Verbesserung und Bedrohungsbereich (Stufe 1: +2, 20 · Stufe 2: +2, 18–20 · Stufe 3: +4, 18–20). Verbesserung von Bogen und Pfeil zählt nicht zusammen: Es gilt der höhere Wert.</p>
+      </div>
+      <div>
+        <div class="lbl">Proben</div>
+        <div id="cTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addC" type="button">Probe hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Fähigkeiten mit begrenzten Einsätzen</div>
+        <div id="aTable" style="display:grid;gap:6px"></div>
+        <button class="btn ghost small" id="addA" type="button">Fähigkeit hinzufügen</button>
+      </div>
+      <div>
+        <div class="lbl">Sichern und übertragen</div>
+        <p class="note">Kopiere den Text, um die Werte auf ein anderes Gerät zu bringen oder aufzuheben. Zum Laden den Text einfügen und „Laden“ tippen.</p>
+        <textarea id="io" aria-label="Gesicherte Werte"></textarea>
+        <div class="row">
+          <button class="btn small" id="exp" type="button">Werte kopieren</button>
+          <button class="btn ghost small" id="imp" type="button">Laden</button>
+          <button class="btn ghost small" id="reset" type="button">Auf Aven zurücksetzen</button>
+        </div>
+      </div>
+    </div>
+  </details>
+  <p class="note" style="text-align:center">Würfelhelfer für Pathfinder 1. Die Spielleitung hat das letzte Wort.</p>
+</div>
+<script>
+const KEY='aven-wuerfelhelfer-v1';
+const DEFAULT={
+  name:'Aven', sub:'Undine · Zen-Bogenschütze 8 · Trickser 2 · Irori',
+  gab:6, lvl:8, ge:6, we:3, wf:1, ws:2, unarmed:'1W10', kiMax:7, kiUsed:0, lkMax:7, lkUsed:0, tier:2, surge:6, leg:2, mat:'Kaltes Eisen',
+  weapons:[
+    {name:'Bogen des vollkommenen Augenblicks',dice:'1W8',critLow:20,critMul:3,enh:2,focus:true,leg:true},
+    {name:'Kurzbogen',dice:'1W6',critLow:20,critMul:3,enh:0,focus:true,leg:false}
+  ],
+  arrow:'plain',
+  checks:[
+    {name:'Initiative',b:10},{name:'Reflex',b:12},{name:'Wille',b:9},{name:'Zähigkeit',b:7},
+    {name:'Akrobatik',b:15},{name:'Heimlichkeit',b:11},{name:'Wahrnehmung',b:7},{name:'Motiv erkennen',b:8},
+    {name:'Motiv erkennen gegen Böse',b:10},{name:'Entfesselungskunst',b:6},{name:'Klettern',b:10},{name:'Schwimmen',b:8},
+    {name:'Beruf (Bogner)',b:8},{name:'Beruf (Bekehren)',b:9},{name:'Wissen (Die Ebenen)',b:6},{name:'Wissen (Geschichte)',b:5},
+    {name:'Wissen (Religion)',b:4},{name:'Heilkunde',b:3},{name:'KMB',b:6}
+  ],
+  abilities:[
+    {name:'Perfekter Schlag',max:8,per:'Tag',used:0,text:'Angriff zweimal würfeln, der bessere zählt. Im Angriffsbereich antippen, gilt für den nächsten Pfeil.'},
+    {name:'Heiliger Pfeilhagel',max:3,per:'Tag',used:0,text:'Kraft des Bogens: +1W6 Schaden auf jeden Treffer dieser Runde. Im Angriffsbereich antippen.'},
+    {name:'Der falsche Augenblick (Bogen)',max:1,per:'Kampf',used:0,text:'Nach einem Fehlschuss: Das Ziel hält ihn für eine Finte und ist bis Ende von Avens nächster Runde gegen ihn und einen Verbündeten auf dem falschen Fuß. Nur, wenn in dieser Runde noch keine Legendäre Kraft genutzt wurde.'},
+    {name:'Abprallender Pfeil (Bogen)',max:1,per:'Kampf',used:0,text:'Ein verfehlter Pfeil prallt ab und darf ein anderes Ziel in 9 m angreifen (neuer Angriffswurf).'}
+  ],
+  sits:{near:true,deadly:false,haste:false,bless:false},
+  pw:{kiArrows:false,kiExtra:false,surprise:false,hail:false,perfect:false},
+  weapon:0, mode:'flurry'
+};
+const LEG=[null,{enh:2,crit:20},{enh:2,crit:18},{enh:4,crit:18}];
+let S;
+function migrate(){S.sits=Object.assign({},DEFAULT.sits,S.sits);S.pw=Object.assign({},DEFAULT.pw,S.pw)}
+function load(){S=structuredClone(DEFAULT)}
+function save(){}
+const $=id=>document.getElementById(id);
+const sg=n=>(n>=0?'+':'−')+Math.abs(n);
+const rnd=s=>1+Math.floor(Math.random()*s);
+const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+function parseDice(t){const m=String(t).toUpperCase().replace('D','W').match(/(\d*)W(\d+)/);return m?{n:+(m[1]||1),s:+m[2]}:{n:0,s:6}}
+function rollDice(n,s){let a=[];for(let i=0;i<n;i++)a.push(rnd(s));return a}
+const sum=x=>x.reduce((p,q)=>p+q,0);
+let toastT;function toast(m){let el=document.querySelector('.toast');if(!el){el=document.createElement('div');el.className='toast';document.body.appendChild(el)}el.textContent=m;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,1800)}
+const abil=n=>S.abilities.find(a=>a.name.startsWith(n));
+
+const SITS=[
+  {k:'near',t:'Ziel bis 9 m',h:'Kernschuss +1/+1'},
+  {k:'deadly',t:'Tödliche Zielgenauigkeit',h:''},
+  {k:'haste',t:'Hast',h:'+1, ein Pfeil mehr'},
+  {k:'bless',t:'Segnung / Moral',h:'+1'}
+];
+const daSteps=()=>1+Math.floor(S.gab/4);
+const POWERS=[
+  {k:'surprise',t:'Überraschungsschlag',h:'1 Kraft · schnelle Aktion',cost:'lk',n:1},
+  {k:'kiArrows',t:'Ki-Pfeile',h:'1 Ki · schnelle Aktion',cost:'ki',n:1},
+  {k:'kiExtra',t:'Ki: zusätzlicher Pfeil',h:'1 Ki · nur Schlaghagel',cost:'ki',n:1,flurry:true},
+  {k:'hail',t:'Heiliger Pfeilhagel',h:'+1W6 je Treffer',cost:'ab',ab:'Heiliger Pfeilhagel'},
+  {k:'perfect',t:'Perfekter Schlag',h:'nächster Pfeil 2×W20',cost:'ab',ab:'Perfekter Schlag'}
+];
+function payPower(p,on){
+  if(p.cost==='lk'){if(on){if(S.lkUsed+p.n>S.lkMax){toast('Keine Legendäre Kraft mehr übrig');return false}S.lkUsed+=p.n}else S.lkUsed=Math.max(0,S.lkUsed-p.n)}
+  if(p.cost==='ki'){if(on){if(S.kiUsed+p.n>S.kiMax){toast('Kein Ki mehr übrig');return false}S.kiUsed+=p.n}else S.kiUsed=Math.max(0,S.kiUsed-p.n)}
+  if(p.cost==='ab'){const a=abil(p.ab);if(!a)return true;if(on){if(a.used>=a.max){toast('Heute schon alle Einsätze verbraucht');return false}a.used++}else a.used=Math.max(0,a.used-1)}
+  return true}
+
+function weapon(){return S.weapons[S.weapon]||S.weapons[0]}
+function effWeapon(w){const e=Object.assign({},w);if(w.leg&&S.leg>0){const L=LEG[S.leg];e.enh=Math.max(w.enh,L.enh);e.critLow=Math.min(w.critLow,L.crit)}e.enh=Math.max(e.enh,1);return e}
+
+function compute(){
+  const w0=weapon(),w=effWeapon(w0);const s=S.sits,p=S.pw;
+  const flurry=S.mode==='flurry';
+  let mods=[];const add=(v,t)=>{if(v)mods.push([v,t])};
+  add(flurry?S.lvl:S.gab,flurry?'Mönchsstufe (Schlaghagel)':'Grund-Angriffsbonus');
+  if(flurry)add(-2,'Schlaghagel');
+  add(S.ge,'Geschicklichkeit');add(w.enh,w.enh>w0.enh&&!w0.leg?'Pfeil +1':'Verbesserung');if(w0.focus)add(S.wf,'Waffenfokus');
+  if(s.near)add(1,'Kernschuss');
+  if(s.deadly)add(-daSteps(),'Tödliche Zielgenauigkeit');
+  if(s.bless)add(1,'Moral');
+  if(s.haste)add(1,'Hast');
+  const x=+$('xAtk').value||0;add(x,'Sonstiges');
+  const base=mods.reduce((a,b)=>a+b[0],0);
+  let dm=[];const addD=(v,t)=>{if(v)dm.push([v,t])};
+  addD(w.enh,'Verbesserung');if(w0.focus)addD(S.ws,'Waffenspezialisierung');if(s.near)addD(1,'Kernschuss');
+  if(s.deadly)addD(3*daSteps(),'Tödliche Zielgenauigkeit (legendär)');addD(+$('xDmg').value||0,'Sonstiges');
+  const stat=dm.reduce((a,b)=>a+b[0],0);
+  const dice=p.kiArrows?S.unarmed:w.dice;
+  const mk=(label,pen,extra)=>({label,bonus:base-pen+(extra?extra.atk:0),pen,why:extra?mods.concat([[extra.atk,extra.t]]):mods,dice,stat,dWhy:dm,critLow:w.critLow,critMul:w.critMul,note:extra?extra.note:''});
+  let pens;
+  if(S.mode==='single')pens=[0];
+  else if(flurry){const b=S.lvl;pens=[];for(let g=b;g>0;g-=5)pens.push(b-g);pens.push(0);if(S.lvl>=8)pens.push(5);if(S.lvl>=15)pens.push(10);pens.sort((a,b)=>a-b)}
+  else{pens=[];for(let g=S.gab;g>0;g-=5)pens.push(S.gab-g);if(!pens.length)pens=[0]}
+  let list=pens.map((pen,i)=>mk((i+1)+'. Pfeil',pen));
+  if(S.mode!=='single'&&s.haste)list.splice(1,0,mk('Pfeil (Hast)',0));
+  if(flurry&&p.kiExtra)list.splice(1,0,mk('Pfeil (Ki)',0));
+  if(p.surprise)list.push(mk('Überraschungsschlag',0,{atk:S.tier,t:'Legendenstufe',note:'Ziel gilt als auf dem falschen Fuß, Schaden ignoriert SR, Ziel höchstens 9 m entfernt.'}));
+  let hints=[];
+  if(s.deadly)hints.push('Tödliche Zielgenauigkeit (legendär): −'+daSteps()+' auf den Angriff, +'+3*daSteps()+' Schaden (statt +'+2*daSteps()+').');
+  if(p.kiArrows&&p.surprise)hints.push('Ki-Pfeile und Überraschungsschlag sind beide schnelle Aktionen. Pro Runde geht nur eine, außer die Spielleitung erlaubt es.');
+  if(p.kiArrows)hints.push('Ki-Pfeile: Die Pfeile machen in dieser Runde waffenlosen Schaden ('+S.unarmed+'). Bedrohungsbereich bleibt der des Bogens.');
+  if(S.arrow==='mat')hints.push('Durchschlagpfeile: überwinden Schadensreduzierung, die '+S.mat+' verlangt.');
+  if(w0.leg&&S.leg>=2)hints.push('Der Bogen (Stufe '+S.leg+') überwindet die Schadensreduzierung von Dämonen (Böses und kaltes Eisen).');
+  hints.push('Präzisionsschuss und Kernschussmeisterschaft: kein −4 auf Ziele im Nahkampf, keine Gelegenheitsangriffe beim Schießen im Nahkampf. Abpraller: Deckung zählt nicht, auch Ziele in völliger Tarnung sind angreifbar.');
+  return {list,hints,w0,w};
+}
+const whyText=(arr,pen)=>arr.map(([v,t])=>sg(v)+' '+t).join(' · ')+(pen?' · −'+pen+' Folgeangriff':'');
+
+function pipsFor(id,max,used,label,setUsed){const p=$(id);p.innerHTML='';
+  for(let i=0;i<max;i++){const b=document.createElement('button');b.type='button';b.className='pip'+(i<used?' used':'');
+    b.setAttribute('aria-label',(i<used?'verbraucht':'verfügbar')+': '+label+' '+(i+1));
+    b.onclick=()=>{setUsed(i<used?i:i+1);save();renderTop()};p.appendChild(b)}}
+function renderTop(){$('hName').textContent=S.name;$('hSub').textContent=S.sub;
+  pipsFor('pipsLk',S.lkMax,S.lkUsed,'Legendäre Kraft',v=>S.lkUsed=v);pipsFor('pipsKi',S.kiMax,S.kiUsed,'Ki',v=>S.kiUsed=v)}
+function chip(on,html,click){const b=document.createElement('button');b.type='button';b.className='chip';b.setAttribute('aria-pressed',!!on);b.innerHTML=html;b.onclick=click;return b}
+function renderAttack(){
+  const W=$('weapons');W.innerHTML='';
+  S.weapons.forEach((w,i)=>{const b=document.createElement('button');b.type='button';b.textContent=w.name;b.setAttribute('aria-pressed',i===S.weapon);b.onclick=()=>{S.weapon=i;save();renderAttack()};W.appendChild(b)});
+  document.querySelectorAll('#mode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.mode===S.mode));
+  const Ar=$('arrows');Ar.innerHTML='';
+  [['plain','Pfeile +1'],['mat','Durchschlagpfeile +1']].forEach(([k,t])=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-pressed',S.arrow===k);b.onclick=()=>{S.arrow=k;save();renderAttack()};Ar.appendChild(b)});
+  const box=$('sits');box.querySelectorAll('.chip').forEach(c=>c.remove());
+  SITS.forEach(o=>{const h=o.k==='deadly'?'−'+daSteps()+' / +'+3*daSteps():o.h;
+    box.appendChild(chip(S.sits[o.k],esc(o.t)+'<small>'+esc(h)+'</small>',()=>{S.sits[o.k]=!S.sits[o.k];save();renderAttack()}))});
+  const pb=$('powers');pb.querySelectorAll('.chip,.btn').forEach(c=>c.remove());
+  POWERS.forEach(p=>{if(p.flurry&&S.mode!=='flurry')return;
+    pb.appendChild(chip(S.pw[p.k],esc(p.t)+'<small>'+esc(p.h)+'</small>',()=>{const on=!S.pw[p.k];if(!payPower(p,on))return;S.pw[p.k]=on;save();renderTop();renderAttack();renderAbilities()}))});
+  const nr=document.createElement('button');nr.type='button';nr.className='btn ghost small';nr.textContent='Runde beenden';nr.onclick=()=>{endRound();toast('Neue Runde')};pb.appendChild(nr);
+  const {list,hints}=compute();
+  const H=$('hints');H.innerHTML='';hints.forEach(t=>{const p=document.createElement('p');p.className='note';p.textContent=t;H.appendChild(p)});
+  const A=$('attacks');A.innerHTML='';
+  list.forEach(a=>{
+    const d=document.createElement('div');d.className='atk';
+    const crit=a.critLow<20?a.critLow+'–20':'20';
+    d.innerHTML='<div class="big">'+sg(a.bonus)+'</div><div><div><b>'+esc(a.label)+'</b></div><div class="dmg">'+esc(a.dice)+(a.stat?sg(a.stat):'')+(S.pw.hail?' <span class="sneak">+1W6</span>':'')+' <span class="mut">· kritisch '+crit+'/×'+a.critMul+'</span></div></div>';
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Würfeln';b.onclick=()=>rollAttack(a);d.appendChild(b);
+    const y=document.createElement('div');y.className='why';y.textContent='Angriff: '+whyText(a.why,a.pen)+'. Schaden: '+a.dice+(a.dWhy.length?' '+whyText(a.dWhy):'')+(S.pw.hail?' · Heiliger Pfeilhagel +1W6':'')+(a.note?' '+a.note:'');
+    d.appendChild(y);A.appendChild(d)});
+}
+function endRound(){['kiArrows','kiExtra','surprise','hail'].forEach(k=>S.pw[k]=false);save();renderAttack()}
+function addResult(logId,node){const L=$(logId);L.prepend(node);while(L.children.length>8)L.lastChild.remove()}
+function surgeBtn(onSurge){const b=document.createElement('button');b.type='button';b.className='btn ghost small';b.textContent='Legendärer Schub +1W'+S.surge+' (1 Kraft)';
+  b.onclick=()=>{if(S.lkUsed>=S.lkMax){toast('Keine Legendäre Kraft mehr übrig');return}S.lkUsed++;save();renderTop();const r=rnd(S.surge);b.remove();onSurge(r)};return b}
+function rollAttack(a,pf){
+  let d20=rnd(20),alt=null;
+  if(pf===undefined)pf=S.pw.perfect;
+  if(pf&&S.pw.perfect){alt=rnd(20);const hi=Math.max(d20,alt),lo=Math.min(d20,alt);d20=hi;alt=lo;S.pw.perfect=false;save();renderAttack()}
+  const threat=d20>=a.critLow;
+  const el=document.createElement('div');el.className='res';
+  let total=d20+a.bonus;
+  const dd=parseDice(a.dice);const wDice=rollDice(dd.n,dd.s);const hDice=S.pw.hail?[rnd(6)]:[];
+  const normal=sum(wDice)+a.stat+sum(hDice);
+  let critTxt='';
+  if(threat){const extra=[];for(let k=1;k<a.critMul;k++)extra.push(...rollDice(dd.n,dd.s));
+    const conf=(alt!==null?alt:rnd(20))+a.bonus;
+    critTxt='<div><span class="tag crit">Bedrohung</span> Bestätigungswurf'+(alt!==null?' (zweiter Wurf des Perfekten Schlags)':'')+': <b class="num">'+conf+'</b>. Trifft er, ist es ein kritischer Treffer: <b class="num">'+(sum(wDice)+sum(extra)+a.stat*a.critMul+sum(hDice))+'</b> Schaden statt '+normal+'.</div>'}
+  const head=()=>'<div class="head"><span><b>'+esc(a.label)+'</b> · W20 = '+d20+(alt!==null?' <span class="mut">(Perfekter Schlag, anderer Wurf '+alt+')</span>':'')+(d20===20?' <span class="tag crit">natürliche 20</span>':'')+(d20===1?' <span class="tag nat1">natürliche 1: Immer eine Chance, trifft, wenn die Summe reicht</span>':'')+'</span><span class="total">'+total+'</span></div>';
+  const body='<div>Schaden: <b class="num">'+normal+'</b> <span class="mut">('+esc(a.dice)+' = '+wDice.join('+')+(a.stat?', '+sg(a.stat):'')+(hDice.length?', Pfeilhagel '+hDice[0]:'')+')</span></div>'+critTxt;
+  el.innerHTML=head()+body;
+  if(d20!==20)el.appendChild(surgeBtn(r=>{total+=r;el.innerHTML=head()+body+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+total+'</b></div>'}));
+  addResult('atkLog',el);
+}
+function renderChecks(){
+  const C=$('checks');C.innerHTML='';
+  S.checks.forEach(c=>{const b=document.createElement('button');b.type='button';b.className='check';b.innerHTML='<span>'+esc(c.name)+'</span><span class="num">'+sg(+c.b)+'</span>';
+    b.onclick=()=>{const d=rnd(20);let t=d+(+c.b);const el=document.createElement('div');el.className='res';
+      const h=()=>'<div class="head"><span><b>'+esc(c.name)+'</b> · W20 = '+d+' '+sg(+c.b)+'</span><span class="total">'+t+'</span></div>';
+      el.innerHTML=h();el.appendChild(surgeBtn(r=>{t+=r;el.innerHTML=h()+'<div><span class="tag surge">Schub +'+r+'</span> Neues Ergebnis: <b class="num">'+t+'</b></div>'}));addResult('chkLog',el)};C.appendChild(b)})
+}
+function card(title,meta,text){const d=document.createElement('div');d.className='ability';d.innerHTML='<div class="head"><b>'+esc(title)+'</b><span class="mut">'+esc(meta)+'</span></div><div class="mut">'+text+'</div>';$('abilities').appendChild(d);return d}
+function renderAbilities(){
+  const A=$('abilities');A.innerHTML='';
+  const body=card('Unversehrtheit des Körpers','2 Ki · Standardaktion','Aven heilt '+S.lvl+' TP (eigene Stufe).');
+  const bb=document.createElement('button');bb.type='button';bb.className='btn small';bb.textContent='Einsetzen';bb.onclick=()=>{if(S.kiUsed+2>S.kiMax){toast('Nicht genug Ki');return}S.kiUsed+=2;save();renderTop();toast('+'+S.lvl+' TP geheilt')};body.querySelector('.head').appendChild(bb);
+  card('Überraschungsschlag (Trickser-Angriff)','1 Legendäre Kraft · schnelle Aktion','Ein zusätzlicher Pfeil auf ein Ziel bis 9 m, mit +'+S.tier+' (Legendenstufe). Das Ziel gilt als auf dem falschen Fuß, der Schaden ignoriert jede Schadensreduzierung. Im Angriffsbereich antippen.');
+  S.abilities.forEach(a=>{const d=document.createElement('div');d.className='ability';
+    d.innerHTML='<div class="head"><b>'+esc(a.name)+'</b><span class="mut">'+(a.max-a.used)+' von '+a.max+' pro '+esc(a.per)+' übrig</span></div>'+(a.text?'<div class="mut">'+esc(a.text)+'</div>':'');
+    const b=document.createElement('button');b.type='button';b.className='btn small';b.textContent='Einsetzen';b.disabled=a.used>=a.max;
+    b.onclick=()=>{a.used=Math.min(a.max,a.used+1);save();renderAbilities()};d.querySelector('.head').appendChild(b);A.appendChild(d)});
+  const kr=card('Ki-Resonanz (Bogen)','1-mal pro Rast','Gibt Aven einen Ki-Punkt aus, erhält er 1 Legendäre Kraft zurück.');
+  const kb=document.createElement('button');kb.type='button';kb.className='btn small';kb.textContent='+1 Kraft';kb.onclick=()=>{S.lkUsed=Math.max(0,S.lkUsed-1);save();renderTop();toast('1 Legendäre Kraft zurück')};kr.querySelector('.head').appendChild(kb);
+  card('Immer aktiv','','<b>Immer eine Chance:</b> Eine natürliche 1 verfehlt nicht automatisch. <b>Abpraller:</b> Pfeile ignorieren Deckung und können Ziele in völliger Tarnung angreifen (Fehlschlagchance bleibt). <b>Schwer zu töten.</b> Dunkelsicht, Kälteresistenz 5, Motiv erkennen gegen Böse +2, Sturz abbremsen 12 m, Spinnenschritt.');
+}
+function renderSettings(){
+  [['sName','name'],['sSub','sub'],['sGab','gab'],['sLvl','lvl'],['sGe','ge'],['sWe','we'],['sWf','wf'],['sWs','ws'],['sUnarmed','unarmed'],['sKi','kiMax'],['sLk','lkMax'],['sTier','tier'],['sSurge','surge'],['sMat','mat'],['sLeg','leg']].forEach(([id,k])=>$(id).value=S[k]);
+  const T=$('wTable');T.innerHTML='';
+  S.weapons.forEach((w,i)=>{const tr=document.createElement('tr');
+    const inp=(k,type,val,attrs='')=>'<td><input data-w="'+i+'" data-k="'+k+'" type="'+type+'" value="'+esc(val)+'" '+attrs+'></td>';
+    tr.innerHTML=inp('name','text',w.name)+inp('dice','text',w.dice,'style="width:5em"')+inp('critLow','number',w.critLow)+inp('critMul','number',w.critMul)+inp('enh','number',w.enh)+'<td><input data-w="'+i+'" data-k="focus" type="checkbox"'+(w.focus?' checked':'')+'></td><td><input data-w="'+i+'" data-k="leg" type="checkbox"'+(w.leg?' checked':'')+'></td><td><button type="button" class="btn ghost small" data-del="'+i+'">Entfernen</button></td>';
+    T.appendChild(tr)});
+  T.querySelectorAll('input').forEach(el=>el.onchange=()=>{const w=S.weapons[+el.dataset.w];const k=el.dataset.k;w[k]=el.type==='checkbox'?el.checked:(el.type==='number'?+el.value:el.value);save();renderAll(false)});
+  T.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{if(S.weapons.length<2){toast('Mindestens eine Waffe muss bleiben');return}S.weapons.splice(+b.dataset.del,1);if(S.weapon>=S.weapons.length)S.weapon=0;save();renderAll()});
+  const C=$('cTable');C.innerHTML='';
+  S.checks.forEach((c,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:1 1 10rem" data-c="'+i+'" data-k="name" value="'+esc(c.name)+'" aria-label="Name der Probe"><input style="width:5rem" type="number" data-c="'+i+'" data-k="b" value="'+c.b+'" aria-label="Bonus"><button type="button" class="btn ghost small" data-cdel="'+i+'">Entfernen</button>';C.appendChild(r)});
+  C.querySelectorAll('input').forEach(el=>el.onchange=()=>{S.checks[+el.dataset.c][el.dataset.k]=el.dataset.k==='b'?+el.value:el.value;save();renderChecks()});
+  C.querySelectorAll('[data-cdel]').forEach(b=>b.onclick=()=>{S.checks.splice(+b.dataset.cdel,1);save();renderAll()});
+  const A=$('aTable');A.innerHTML='';
+  S.abilities.forEach((a,i)=>{const r=document.createElement('div');r.className='row';r.innerHTML='<input style="flex:1 1 9rem" data-a="'+i+'" data-k="name" value="'+esc(a.name)+'" aria-label="Name"><input style="width:4.5rem" type="number" data-a="'+i+'" data-k="max" value="'+a.max+'" aria-label="Einsätze"><select style="width:6rem" data-a="'+i+'" data-k="per" aria-label="pro"><option'+(a.per==='Tag'?' selected':'')+'>Tag</option><option'+(a.per==='Rast'?' selected':'')+'>Rast</option><option'+(a.per==='Kampf'?' selected':'')+'>Kampf</option></select><input style="flex:2 1 12rem" data-a="'+i+'" data-k="text" value="'+esc(a.text||'')+'" aria-label="Kurzbeschreibung"><button type="button" class="btn ghost small" data-adel="'+i+'">Entfernen</button>';A.appendChild(r)});
+  A.querySelectorAll('input,select').forEach(el=>el.onchange=()=>{S.abilities[+el.dataset.a][el.dataset.k]=el.dataset.k==='max'?+el.value:el.value;save();renderAbilities()});
+  A.querySelectorAll('[data-adel]').forEach(b=>b.onclick=()=>{S.abilities.splice(+b.dataset.adel,1);save();renderAll()});
+}
+function renderAll(withSettings=true){renderTop();renderAttack();renderChecks();renderAbilities();if(withSettings)renderSettings()}
+
+[['sName','name',0],['sSub','sub',0],['sGab','gab',1],['sLvl','lvl',1],['sGe','ge',1],['sWe','we',1],['sWf','wf',1],['sWs','ws',1],['sUnarmed','unarmed',0],['sKi','kiMax',1],['sLk','lkMax',1],['sTier','tier',1],['sSurge','surge',1],['sMat','mat',0],['sLeg','leg',1]].forEach(([id,k,n])=>{$(id).onchange=e=>{S[k]=n?+e.target.value:e.target.value;S.lkUsed=Math.min(S.lkUsed,S.lkMax);S.kiUsed=Math.min(S.kiUsed,S.kiMax);save();renderAll(false)}});
+document.querySelectorAll('#mode button').forEach(b=>b.onclick=()=>{S.mode=b.dataset.mode;if(S.mode!=='flurry'&&S.pw.kiExtra){S.pw.kiExtra=false;S.kiUsed=Math.max(0,S.kiUsed-1);renderTop()}save();renderAttack()});
+$('xAtk').oninput=renderAttack;$('xDmg').oninput=renderAttack;
+$('rollAll').onclick=()=>{const {list}=compute();[...list].reverse().forEach(a=>rollAttack(a,a===list[0]));endRound()};
+$('rest').onclick=()=>{S.lkUsed=0;S.kiUsed=0;S.abilities.forEach(a=>a.used=0);Object.keys(S.pw).forEach(k=>S.pw[k]=false);save();renderAll(false);toast('Ausgeruht: alles wieder voll')};
+$('addW').onclick=()=>{S.weapons.push({name:'Neuer Bogen',dice:'1W8',critLow:20,critMul:3,enh:0,focus:true,leg:false});save();renderAll()};
+$('addC').onclick=()=>{S.checks.push({name:'Neue Probe',b:0});save();renderAll()};
+$('addA').onclick=()=>{S.abilities.push({name:'Neue Fähigkeit',max:1,per:'Tag',used:0,text:''});save();renderAll()};
+$('exp').onclick=()=>{const t=JSON.stringify(S);$('io').value=t;if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('Werte kopiert'),()=>{$('io').select();toast('Text markiert: bitte kopieren')})}else{$('io').select()}};
+$('imp').onclick=()=>{try{const o=JSON.parse($('io').value);S=Object.assign(structuredClone(DEFAULT),o);migrate();save();renderAll();toast('Werte geladen')}catch(e){toast('Der Text ist kein gültiger Werte-Text')}};
+let resetArmed=false;$('reset').onclick=e=>{if(!resetArmed){resetArmed=true;e.target.textContent='Wirklich zurücksetzen?';setTimeout(()=>{resetArmed=false;e.target.textContent='Auf Aven zurücksetzen'},3000);return}S=structuredClone(DEFAULT);save();renderAll();toast('Auf Aven zurückgesetzt')};
+load();renderAll();
+</script>
+</body>
+</html>

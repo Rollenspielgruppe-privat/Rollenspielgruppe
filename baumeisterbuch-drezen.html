@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Baumeisterbuch Drezen</title>
+<style>
+/* Layout: Kontorbuch – oben die Bauprobe als Werkbank, darunter die Orden als Register, rechts Heilige, Feste und Pfusch */
+:root{
+ --bg:#eef0ea; --panel:#fbfbf7; --ink:#1f2421; --muted:#5f6862; --line:#cfd5cc;
+ --accent:#2f5d50; --accent-ink:#ffffff; --brass:#9a7420; --warn:#a2461f; --good:#2f6b3a; --bad:#9b2c2c;
+ --chip:#e3e8e0;
+ --f-display:"Alegreya",Georgia,serif; --f-body:"Alegreya Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+ --bg:#151a18; --panel:#1d2421; --ink:#e7ebe6; --muted:#9aa59e; --line:#34403b;
+ --accent:#7fb7a4; --accent-ink:#0d1512; --brass:#d1aa55; --warn:#e08a5c; --good:#7cc489; --bad:#e07a7a; --chip:#27302c; color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#151a18; --panel:#1d2421; --ink:#e7ebe6; --muted:#9aa59e; --line:#34403b;
+ --accent:#7fb7a4; --accent-ink:#0d1512; --brass:#d1aa55; --warn:#e08a5c; --good:#7cc489; --bad:#e07a7a; --chip:#27302c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;
+ padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:18px}
+h1{font-family:var(--f-display);font-size:2rem;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-size:1.3rem;margin:0 0 10px}
+h3{font-family:var(--f-display);font-size:1.08rem;margin:0}
+.sub{color:var(--muted);margin:2px 0 0}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pill{background:var(--chip);border-radius:999px;padding:3px 10px;font-size:.85rem;white-space:nowrap}
+.pill.save{font-variant-numeric:tabular-nums}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+.grid2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px}
+@media (max-width:860px){.grid2{grid-template-columns:minmax(0,1fr)}}
+label{display:grid;gap:3px;font-size:.85rem;color:var(--muted)}
+select,input[type=number]{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;width:100%}
+input[type=number]{font-variant-numeric:tabular-nums}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px}
+.checks label{display:flex;gap:6px;align-items:center;color:var(--ink);font-size:.9rem}
+button{font:inherit;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:6px;padding:6px 12px;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.calc{margin-top:12px;display:grid;gap:8px}
+.sgline{display:flex;flex-wrap:wrap;gap:6px;font-variant-numeric:tabular-nums}
+.sgline span{background:var(--chip);border-radius:6px;padding:2px 8px;font-size:.85rem}
+.sgline .big{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.result{border-left:5px solid var(--line);padding:10px 12px;background:var(--bg);border-radius:6px}
+.result.good{border-color:var(--good)} .result.bad{border-color:var(--bad)} .result.warn{border-color:var(--warn)}
+.result strong{font-family:var(--f-display);font-size:1.15rem}
+.small{font-size:.85rem;color:var(--muted)}
+.orders{display:grid;gap:14px}
+.order h3{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.order .held{font-family:var(--f-body);font-weight:500;color:var(--muted);font-size:.9rem}
+table{width:100%;border-collapse:collapse}
+.tw{overflow-x:auto}
+td,th{text-align:left;padding:6px 6px;border-top:1px solid var(--line);vertical-align:middle}
+th{font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-top:none}
+.pips{display:flex;gap:3px;align-items:center}
+.pip{width:15px;height:15px;border-radius:3px;border:1.5px solid var(--accent);background:transparent;padding:0}
+.pip.on{background:var(--accent)}
+.tag{display:inline-block;font-size:.72rem;border-radius:4px;padding:1px 6px;margin:1px 2px 1px 0;background:var(--chip)}
+.tag.ok{color:var(--good)} .tag.no{color:var(--bad)} .tag.sw{color:var(--good)} .tag.ex{color:var(--warn)} .tag.mk{color:var(--bad);font-weight:700} .tag.done{background:var(--accent);color:var(--accent-ink)} .tag.neu{color:var(--brass)}
+.pname{font-weight:700}
+details summary{cursor:pointer;color:var(--muted);font-size:.82rem}
+.heroes{display:grid;gap:8px}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 62px 62px auto;gap:6px;align-items:end}
+.lp{font-variant-numeric:tabular-nums;font-weight:700}
+.log{max-height:280px;overflow:auto;display:grid;gap:4px;font-size:.88rem}
+.log div{border-top:1px solid var(--line);padding-top:4px}
+.side{display:grid;gap:18px;align-content:start}
+.note{font-size:.85rem;color:var(--warn)}
+@media (prefers-reduced-motion:no-preference){.result{animation:in .2s ease-out}@keyframes in{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}}
+.orders>*,.panel,.grid2>*{min-width:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+ <div><h1>Baumeisterbuch Drezen</h1><p class="sub">Bauproben, Hast, Legendenpunkte, Feste und Pfusch-Marker der Orden · Werkzeug der Spielleitung</p></div>
+ <div class="bar">
+  <span class="pill" id="sessPill">Sitzung 1</span>
+  <span class="pill" id="monthPill">Spielmonat 1</span>
+  <span class="pill" id="festPill">Fest: ±0</span>
+  <span class="pill save" id="savePill">wird geladen …</span>
+  <button id="newSess" type="button">Neue Sitzung</button>
+  <button id="newMonth" type="button">Neuer Spielmonat</button>
+ </div>
+</header>
+
+<div class="grid2">
+ <section class="panel" aria-labelledby="h-probe">
+  <h2 id="h-probe">Bauprobe</h2>
+  <div class="form">
+   <label>Orden<select id="selOrden"></select></label>
+   <label>Projekt<select id="selProj"></select></label>
+   <label>Heiliger<select id="selHero"></select></label>
+   <label>Gangart<select id="selGang">
+    <option value="0">Gewöhnlich (±0)</option><option value="1">Antreiben (SG +5, +1 Abschnitt)</option><option value="2">Gewaltmarsch (SG +10, +2 Abschnitte, 1 LP)</option></select></label>
+   <label>Fertigkeitsbonus<input id="inSkill" type="number" value="12" step="1"></label>
+   <label>W20 (leer = würfeln)<input id="inD20" type="number" min="1" max="20" placeholder="–"></label>
+  </div>
+  <div class="checks">
+   <label><input type="checkbox" id="cHelp"> Hilfe (+2)</label>
+   <label><input type="checkbox" id="cSchub"> Legendärer Schub (1 LP)</label>
+   <label><input type="checkbox" id="cPfad"> Pfadfähigkeit: Schub ohne Kosten (1×/Sitzung)</label>
+   <label><input type="checkbox" id="cFreeHelp"> Fest-Hilfe einlösen (+2)</label>
+   <label><input type="checkbox" id="cOther"> Sonstiger Bonus</label><input id="inOther" type="number" value="0" style="width:70px" aria-label="Sonstiger Bonus">
+  </div>
+  <div class="calc">
+   <div class="sgline" id="sgLine"></div>
+   <div class="note" id="warn"></div>
+   <div class="row"><button class="primary" id="btnRoll" type="button">Probe werfen</button><span class="small" id="lpInfo"></span></div>
+   <div id="resultBox"></div>
+  </div>
+ </section>
+
+ <aside class="side">
+  <section class="panel" aria-labelledby="h-heroes">
+   <h2 id="h-heroes">Heilige und Legendenpunkte</h2>
+   <div class="heroes" id="heroes"></div>
+   <div class="row" style="margin-top:8px"><button id="lpReset" type="button">Alle Legendenpunkte auffüllen</button></div>
+   <p class="small">Höchstwert pro Tag: 3 + 2 × Legendenstufe. Pro Probe höchstens 2 Legendenpunkte.</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-fest">
+   <h2 id="h-fest">Fest ausrichten</h2>
+   <div class="form">
+    <label>Ausrichter<select id="festHero"></select></label>
+    <label>Diplomatie / Auftreten<input id="festSkill" type="number" value="12"></label>
+    <label>W20 (leer = würfeln)<input id="festD20" type="number" min="1" max="20" placeholder="–"></label>
+   </div>
+   <div class="checks"><label><input type="checkbox" id="festHelp"> Hilfe (+2)</label><label><input type="checkbox" id="festSchub"> Legendärer Schub (1 LP)</label></div>
+   <div class="sgline" id="festLine" style="margin-top:8px"></div>
+   <div class="row" style="margin-top:8px"><button class="primary" id="festBtn" type="button">Fest feiern</button></div>
+   <div id="festBox" style="margin-top:8px"></div>
+  </section>
+ </aside>
+</div>
+
+<div class="grid2">
+ <section class="panel" aria-labelledby="h-orders">
+  <h2 id="h-orders">Projekte der Orden</h2>
+  <p class="small">Kästchen anklicken setzt den Fortschritt von Hand. Pfusch-Marker sind nur hier sichtbar.</p>
+  <div class="orders" id="orders"></div>
+ </section>
+ <aside class="side">
+  <section class="panel" aria-labelledby="h-pfusch">
+   <h2 id="h-pfusch">Pfusch und Belastung</h2>
+   <div id="pfusch"></div>
+  </section>
+  <section class="panel" aria-labelledby="h-ev">
+   <h2 id="h-ev">Ereignisse</h2>
+   <div class="row" id="evBtns"></div>
+   <div id="evBox" style="margin-top:8px"></div>
+  </section>
+  <section class="panel" aria-labelledby="h-log">
+   <h2 id="h-log">Protokoll</h2>
+   <div class="log" id="log"></div>
+  </section>
+ </aside>
+</div>
+</div>
+
+
+<section class="panel" aria-labelledby="h-io" style="margin-top:16px">
+ <h2 id="h-io">Stand sichern und laden</h2>
+ <p class="sub">Diese Seite speichert nichts von selbst. Sichere den Stand am Ende jeder Sitzung als Datei oder als Text und lade ihn beim nächsten Mal wieder.</p>
+ <div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+  <button type="button" class="primary" id="ioDl">Stand als Datei sichern</button>
+  <label style="display:inline-flex;gap:6px;align-items:center">Datei laden: <input type="file" id="ioFile" accept=".json,application/json"></label>
+ </div>
+ <textarea id="ioTxt" aria-label="Stand als Text" style="width:100%;min-height:80px;margin-top:8px;font:12px ui-monospace,Menlo,monospace"></textarea>
+ <div class="row" style="display:flex;flex-wrap:wrap;gap:8px">
+  <button type="button" id="ioCopy">Stand als Text kopieren</button>
+  <button type="button" id="ioLoad">Text laden</button>
+ </div>
+</section>
+<script>
+const DATA = [{"orden":"Orden des Lichts","held":["Eran"],"events":["Ein Zweifler predigt gegen die „Heiligen von Drezen“. Nächste Probe des Lichts −2, bis Eran mit ihm spricht.","Ein Schreiber verschwindet mit einer Abschrift. Wohin, ist offen.","Ein Kind fragt Eran öffentlich, ob Iomedae auch Dämonenkinder liebt. Ruhiger Rollenspielmoment.","Eine Gruppe Bekehrter bittet, beim Tempelbau helfen zu dürfen.","Ein wandernder Gelehrter bietet seine Bücher an. Nächste Probe am Archiv oder an der Schule +2.","Ein kleines Wunder: Am Bauplatz des Tempels blüht etwas, das in der Weltenwunde nicht blühen dürfte. Nächster Abschnitt eines Projekts des Lichts gelingt automatisch mit „Minimum geschafft“."],"proj":[{"n":"Schule","a":4,"f":"Diplomatie / Wissen (Lokales)","m":0,"vt":"keine","req":[],"mis":"Eltern der Bekehrten halten ihre Kinder fern. Nächste Probe an der Schule −2.","weit":"Ein zweiter Lehrer meldet sich freiwillig. Der nächste Abschnitt eines beliebigen Projekts des Lichts erhält +2.","fertig":"Das Azubi-Programm beginnt. Einmal pro Sitzung leisten Schüler auf einer beliebigen Bauprobe Hilfe (+2)."},{"n":"Tempel","a":5,"f":"Wissen (Religion) / Beruf (Baumeister)","m":2,"vt":"Bauhof mindestens 2 Abschnitte","req":[[["Bauhof",2]]],"mis":"Die Priesterschaft streitet über die Ausrichtung des Altars. Ein Abschnitt geht verloren, falls schon einer gebaut ist.","weit":"Pilger bringen Spenden. Ein beliebiges Projekt in Drezen erhält −1 Abschnitt.","fertig":"Heilzauber und Krankheit entfernen im Tempel zum Materialpreis. +1 auf Moraltests der Armeen in Drezen."},{"n":"Theater","a":3,"f":"Auftreten / Diplomatie","m":-2,"vt":"keine","req":[],"mis":"Die erste Probe wird ausgebuht, das Stück abgesetzt. Nächste Probe am Theater −2.","weit":"Das erste Stück spricht sich bis Kenabres herum. Neue Bürger ziehen nach Drezen.","fertig":"Einmal pro Sitzung: eine Aufführung hebt die Stimmung. Ein beliebiges misslungenes Ereignis (W6 = 1 oder 2) eines Ordens wird ignoriert."},{"n":"Archiv","a":4,"f":"Wissen (Arkanes) / Linguistik","m":2,"vt":"Tunnel und Kanäle mindestens 2 Abschnitte (trockener Keller)","req":[[["Tunnel und Kanäle",2]]],"mis":"Eine dämonische Schrift entfaltet ihre Wirkung. Ein Schreiber erkrankt, nächste Probe am Archiv −2.","weit":"Ein alter Text taucht auf. Die SL gibt einen Hinweis zur Zitadelle oder zur Weltenwunde.","fertig":"+2 auf Wissensproben bei Recherche in Drezen. Gefundene Schriften können sicher verwahrt werden."},{"n":"Pilgerherberge","a":3,"f":"Diplomatie / Beruf (Wirt)","m":0,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Pilger bleiben in Drezen. Spenden und Gerüchte aus dem ganzen Land.","neu":true},{"n":"Haus des Frauennetzes","a":2,"f":"Diplomatie / Motiv erkennen","m":-2,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Bellmarnis hat einen festen Ort; das Netz meldet Nöte in der Stadt früh.","neu":true}]},{"orden":"Orden der Klinge","held":["Echemon"],"events":["Fahnenflucht: Drei Söldner verschwinden mit Ausrüstung. Nächste Probe der Klinge −2.","Eine Schlägerei zwischen Kreuzfahrern und Söldnern in der Schenke.","Ein Veteran bittet, als Ausbilder dienen zu dürfen, obwohl er ein Bein verloren hat.","Eine Patrouille bringt einen verletzten Späher aus der Weltenwunde zurück. Er weiß etwas.","Ein Schmied aus dem Süden bietet seine Dienste an. Nächste Probe am Waffendepot +2.","Eine Einheit vollbringt eine Heldentat vor der Mauer. Nächster Abschnitt eines Projekts der Klinge gelingt automatisch mit „Minimum geschafft“."],"proj":[{"n":"Kaserne","a":5,"f":"Wissen (Ingenieurwesen) / Beruf (Soldat)","m":2,"vt":"Bauhof mindestens 2 Abschnitte","req":[[["Bauhof",2]]],"mis":"Ordensklingen und Söldner streiten um die Quartiere. Nächste Probe der Klinge −2.","weit":"Freiwillige aus der Stadt melden sich. Die Klinge gewinnt eine kleine Einheit Rekruten.","fertig":"+1 Moral für Armeen, die in Drezen stationiert sind. Ausbildung in den Ordensstufen geht schneller."},{"n":"Ställe","a":3,"f":"Mit Tieren umgehen / Reiten","m":0,"vt":"Zisternen mindestens 1 Abschnitt","req":[[["Zisternen",1]]],"mis":"Verdorbenes Futter aus der Weltenwunde. Mehrere Pferde erkranken, ein Abschnitt geht verloren, falls schon einer gebaut ist.","weit":"Ein wildes Reittier (z. B. ein Hippogreif) lässt sich am Stall blicken und könnte gezähmt werden.","fertig":"Boten und Reiter aus Drezen reisen um ein Viertel schneller. Berittene Einheiten können aufgestellt werden."},{"n":"Waffendepot","a":4,"f":"Schätzen / Handwerk (Waffen)","m":0,"vt":"keine","req":[],"mis":"Diebstahl: Eine Kiste Waffen fehlt. Wer sie genommen hat, ist offen.","weit":"Bei der Inventur wird ein vergessener Vorrat gefunden: ein Satz Bolzen oder Klingen aus kaltem Eisen.","fertig":"Gewöhnliche Waffen und Rüstungen in Drezen zum Listenpreis −10 %. Armeen gelten als gut ausgerüstet."},{"n":"Übungsplatz und Drill","a":3,"f":"Einschüchtern / Diplomatie","m":-2,"vt":"keine","req":[],"mis":"Ein Rekrut wird beim Drill schwer verletzt. Gerede über Härte in der Klinge.","weit":"Die Truppe gewinnt einen Ruf. Händler und Bürger fühlen sich sicherer: nächste Probe des Ordens der Waage +2.","fertig":"Einmal pro Sitzung: Eine gedrillte Einheit kann eine Szene in der Stadt beruhigen oder absichern, ohne dass ein Heiliger eingreifen muss."},{"n":"Klingenbräu-Brauerei","a":3,"f":"Beruf (Brauer) / Diplomatie","m":0,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Drezener Klingenbräu fließt. Feste +2.","neu":true},{"n":"Schänke der Orden","a":2,"f":"Diplomatie / Auftreten","m":-2,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Treffpunkt der Orden. Feste +2 (nicht mit der Brauerei kumulativ).","neu":true},{"n":"Exerzierplatz der Elite","a":2,"f":"Einschüchtern / Beruf (Soldat)","m":0,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Paraden und Drill der Elitetruppen am Trupat-Tor.","neu":true}]},{"orden":"Orden des Schattens","held":["Davoc"],"events":["Unter der Stadt kratzt etwas an einer Wand. Nächste Probe des Schattens −2, bis jemand nachsieht.","Ein Arbeiter behauptet, im Dunkeln Stimmen gehört zu haben. Die anderen weigern sich, nachts zu graben.","Ein Kind der Überreste kennt einen Weg, den kein Plan zeigt.","Crel schickt eine verschlüsselte Notiz mit einem Hinweis auf einen alten Zugang.","Zwerge aus dem Süden bieten Werkzeug und Wissen an. Nächste Probe an Tunnel oder Zisterne +2.","Torag zeigt Davoc im Traum den Verlauf einer Ader festen Gesteins. Nächster Abschnitt eines Projekts des Schattens gelingt automatisch mit „Minimum geschafft“."],"proj":[{"n":"Tunnel und Kanäle","a":5,"f":"Wissen (Gewölbekunde) / Wissen (Ingenieurwesen)","m":2,"vt":"keine (Duergar: Steingespür +2)","req":[],"mis":"Ein Gang stürzt ein, Arbeiter sind verschüttet. Davoc muss eine Rettung leiten (kurze Szene). Ein Abschnitt geht verloren, falls schon einer gebaut ist.","weit":"Ein alter Gang aus der Zeit der Kreuzritter wird entdeckt. −1 Abschnitt und ein Fund nach Wahl der SL.","fertig":"Abwasser fließt ab, die Seuchengefahr sinkt. Verborgene Fluchtwege aus der Stadt."},{"n":"Geheimgänge","a":3,"f":"Mechanismus ausschalten / Heimlichkeit","m":4,"vt":"Tunnel und Kanäle mindestens 3 Abschnitte","req":[[["Tunnel und Kanäle",3]]],"mis":"Ein Gang wird verraten. Der Abschnitt muss neu angelegt werden.","weit":"Ein Gang führt zu einem verborgenen Raum, den niemand kannte. Inhalt nach Wahl der SL.","fertig":"Heilige und Verbündete bewegen sich unbemerkt durch die Stadt. Bei einem Angriff auf Drezen erhalten die Verteidiger eine Überraschungsrunde."},{"n":"Zisternen","a":4,"f":"Wissen (Natur) / Wissen (Ingenieurwesen)","m":0,"vt":"keine","req":[],"mis":"Das Wasser ist durch die Weltenwunde verdorben. Krankheitsfälle in einem Viertel, bis die Zisterne gereinigt ist.","weit":"Eine Quelle reinen Wassers wird gefunden. Davoc kann sie Torag weihen.","fertig":"Drezen übersteht eine Belagerung ohne Wassernot. Krankheiten breiten sich langsamer aus."},{"n":"Netz der Boten","a":3,"f":"Motiv erkennen / Bluffen","m":2,"vt":"keine","req":[],"mis":"Ein Spitzel sitzt im Netz. Eine falsche Nachricht erreicht die Heiligen.","weit":"Ein feindlicher Spitzel wird umgedreht und arbeitet nun für den Schatten.","fertig":"Einmal pro Sitzung erfährt Davoc ein Gerücht oder eine Bewegung in der Stadt, bevor sie öffentlich wird."},{"n":"Botenstation und Taubenschlag","a":2,"f":"Mit Tieren umgehen / Bluffen","m":0,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Briefe von und nach Kenabres brauchen kürzer.","neu":true}]},{"orden":"Orden der Waage","held":["Aven"],"events":["Ein Händler beschuldigt die Waage des Betrugs. Nächste Probe der Waage −2, bis die Bücher geprüft sind.","Ein Wagenzug kommt nicht an. Überfall oder Umweg?","Ein Bettler bittet Aven um einen Kredit, um einen Stand zu eröffnen.","Ein Gesandter des Aspis-Konsortiums erkundigt sich höflich nach den Preisen.","Ein ehrlicher Schreiber aus Kenabres bietet seine Dienste an. Nächste Probe an Bank oder Handelshaus +2.","Ein Markttag wird zum Fest. Nächster Abschnitt eines Projekts der Waage gelingt automatisch mit „Minimum geschafft“."],"proj":[{"n":"Bank","a":5,"f":"Beruf (Buchhalter) / Schätzen","m":2,"vt":"Tunnel und Kanäle mindestens 2 Abschnitte (Tresor) oder Bauhof fertig","req":[[["Tunnel und Kanäle",2]],[["Bauhof",4]]],"mis":"Im Grundstock tauchen gefälschte Münzen auf. Nächste Probe an der Bank −2, Gerede in der Stadt.","weit":"Ein vermögender Einleger vertraut Drezen sein Gold an. Ein beliebiges Projekt in Drezen erhält −1 Abschnitt.","fertig":"Drezen kann Kredite vergeben. Pro Spielwoche 1W6 × 20 GM für Bauvorhaben."},{"n":"Handelshaus","a":4,"f":"Diplomatie / Bluffen","m":0,"vt":"keine","req":[],"mis":"Fremde Händler verlangen Vorrechte, sonst ziehen sie ab. Eine Entscheidung ist nötig.","weit":"Ein exklusiver Handelsvertrag wird geschlossen. Die SL bestimmt, mit wem.","fertig":"Gegenstände bis 5.000 GM sind in Drezen erhältlich. Verkäufe bis zu diesem Wert ohne Wartezeit."},{"n":"Lagerhäuser","a":3,"f":"Wahrnehmung / Beruf (Händler)","m":-2,"vt":"keine","req":[],"mis":"Ratten, Schwund oder ein kleiner Brand. Ein Teil der Vorräte ist verloren.","weit":"Ein Überschuss wird entdeckt. Er kann verkauft oder für einen Notfall zurückgelegt werden.","fertig":"Einmal pro Sitzung kann ein misslungener Bauabschnitt eines beliebigen Ordens zu „Minimum geschafft“ werden (Reserven aus dem Lager)."},{"n":"Markt und Zoll","a":3,"f":"Motiv erkennen / Diplomatie","m":0,"vt":"keine","req":[],"mis":"Schmuggler umgehen den Zoll. Die Einnahmen bleiben aus, bis jemand die Lücke findet.","weit":"Ein Händlerzug zahlt freiwillig mehr, um als Erster zugelassen zu werden.","fertig":"Regelmäßige Zolleinnahmen. Die Waage weiß, was in die Stadt kommt und was sie verlässt."},{"n":"Gerichtshaus","a":4,"f":"Wissen (Adel) / Diplomatie","m":2,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Drezen spricht eigenes Recht.","neu":true},{"n":"Brunnenhaus","a":3,"f":"Wissen (Natur) / Wissen (Ingenieurwesen)","m":2,"vt":"Zisternen mindestens 2 Abschnitte","req":[[["Zisternen",2]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Wasser am Ahari-Flussbett.","neu":true}]},{"orden":"Orden der Baukunst","held":["Bukka"],"events":["Ein Gerüst wird nachts angesägt. Sabotage? Nächste Probe der Baukunst −2, bis der Täter gefunden ist.","Zwei Zünfte streiten, wer ein Dach decken darf.","Eine Riesenkrähe sitzt jeden Morgen auf demselben First und sieht zu.","Ein alter Steinmetz zeigt Bukka ein Zeichen, das die Erbauer von Alt-Drezen in die Grundsteine geritzt haben.","Eine Holzlieferung kommt früher als erwartet. Nächste Probe am Holzplatz oder Bauhof +2.","Die ganze Stadt hilft einen Tag lang beim Bauen. Nächster Abschnitt eines Projekts der Baukunst gelingt automatisch mit „Minimum geschafft“."],"proj":[{"n":"Bauhof","a":4,"f":"Beruf (Baumeister) / Wissen (Ingenieurwesen)","m":0,"vt":"keine","req":[],"mis":"Ein Kran bricht, Werkzeug geht verloren. Nächste Probe der Baukunst −2.","weit":"Eine neue Bauweise spart Zeit. Das nächste Projekt eines beliebigen Ordens erhält −1 Abschnitt.","fertig":"+1 auf alle Bauproben aller Orden. Voraussetzung für Tempel, Kaserne und Bank."},{"n":"Handwerksschule","a":4,"f":"Diplomatie / Beruf (Dachdecker)","m":0,"vt":"Bauhof mindestens 2 Abschnitte","req":[[["Bauhof",2]]],"mis":"Mehrere Lehrlinge laufen davon. Nächste Probe an der Schule −2.","weit":"Ein Meister von außerhalb kommt und bleibt.","fertig":"Einmal pro Sitzung leisten Lehrlinge auf einer beliebigen Bauprobe Hilfe (+2). Neue Mitglieder für den Orden der Baukunst."},{"n":"Gerüste und Dächer","a":3,"f":"Klettern / Akrobatik","m":-2,"vt":"keine (Tengu: Bonus nach Wahl der SL)","req":[],"mis":"Ein Arbeiter stürzt. Bukka muss ihn auffangen oder versorgen (kurze Szene).","weit":"Alle offenen Dächer sind vor dem ersten Sturm gedeckt.","fertig":"Unwetter schaden den Bauten nicht mehr. Drezen hat einen Witterungsschutz für alle laufenden Projekte."},{"n":"Holzplatz und Sägewerk","a":3,"f":"Beruf (Zimmermann) / Wissen (Natur)","m":0,"vt":"keine","req":[],"mis":"Das Holz ist feucht oder vom Dämonenland befallen. Ein Teil muss verbrannt werden.","weit":"Besonders gutes Holz wird geliefert. Ein beliebiges Projekt erhält −1 Abschnitt.","fertig":"Holz ist kein Engpass mehr. Proben, die durch Materialmangel erschwert wären, entfallen."},{"n":"Krähenhorst","a":3,"f":"Klettern / Beruf (Zimmermann)","m":0,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Ausguck und Botenkrähen für Bukka.","neu":true},{"n":"Theaterplatz","a":2,"f":"Beruf (Baumeister) / Wissen (Ingenieurwesen)","m":-2,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Fest auf dem Platz +1.","neu":true},{"n":"Marktplatz","a":2,"f":"Beruf (Baumeister) / Wissen (Ingenieurwesen)","m":-2,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Fest auf dem Platz +1.","neu":true}]},{"orden":"Vorburg (Klinge und Schatten)","held":["Echemon","Davoc"],"events":["Fahnenflucht: Drei Söldner verschwinden mit Ausrüstung. Nächste Probe der Klinge −2.","Eine Schlägerei zwischen Kreuzfahrern und Söldnern in der Schenke.","Ein Veteran bittet, als Ausbilder dienen zu dürfen, obwohl er ein Bein verloren hat.","Eine Patrouille bringt einen verletzten Späher aus der Weltenwunde zurück. Er weiß etwas.","Ein Schmied aus dem Süden bietet seine Dienste an. Nächste Probe am Waffendepot +2.","Eine Einheit vollbringt eine Heldentat vor der Mauer. Nächster Abschnitt eines Projekts der Klinge gelingt automatisch mit „Minimum geschafft“."],"proj":[{"n":"Sternring mit Bastionen","a":6,"f":"Wissen (Ingenieurwesen) / Beruf (Baumeister)","m":4,"vt":"Bauhof fertig","req":[[["Bauhof",4]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Die Vorburg steht. Angriffe von Westen treffen zuerst auf den Sternring.","neu":true},{"n":"Graben und Zugbrücke","a":3,"f":"Wissen (Ingenieurwesen) / Beruf (Baumeister)","m":0,"vt":"Sternring mindestens 2 Abschnitte","req":[[["Sternring mit Bastionen",2]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Angreifer brauchen Sturmgerät, um die Vorburg zu erreichen.","neu":true},{"n":"Batteriering","a":4,"f":"Handwerk (Belagerungswaffen) / Wissen (Ingenieurwesen)","m":2,"vt":"Sternring mindestens 3 Abschnitte","req":[[["Sternring mit Bastionen",3]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Ballisten und Katapulte decken das Vorfeld.","neu":true},{"n":"Tor zur Erlösung","a":5,"f":"Wissen (Ingenieurwesen) / Beruf (Steinmetz)","m":4,"vt":"Sternring mindestens 4 Abschnitte","req":[[["Sternring mit Bastionen",4]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Das Westtor ist offen. Wer ankommt, kommt hier an.","neu":true},{"n":"Geschützwerkstatt und Magazin","a":3,"f":"Handwerk (Belagerungswaffen) / Handwerk (Waffen)","m":2,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Geschütze werden in Drezen gebaut und gewartet.","neu":true},{"n":"Elitekaserne","a":4,"f":"Wissen (Ingenieurwesen) / Beruf (Soldat)","m":2,"vt":"Kaserne fertig","req":[[["Kaserne",5]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Die Tiefling-Spezialtruppe hat ihr Quartier.","neu":true},{"n":"Aufnahmelager","a":2,"f":"Heilkunde / Motiv erkennen","m":-2,"vt":"Tor zur Erlösung mindestens 2 Abschnitte","req":[[["Tor zur Erlösung",2]]],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Ankommende werden geprüft, bevor sie die Stadt betreten.","neu":true},{"n":"Leuchtfeuer und Signalfeuer","a":3,"f":"Wahrnehmung / Wissen (Ingenieurwesen)","m":0,"vt":"keine","req":[],"mis":"Komplikation nach Wahl der SL.","weit":"Besondere Wirkung nach Wahl der SL.","fertig":"Alarm erreicht die ganze Stadt in Minuten.","neu":true}]}];
+const UNG = ["Ein Gerüst bricht. Unter den Verletzten ist jemand, den die Heiligen kennen.","Die Arbeiter legen die Arbeit nieder und schicken einen Sprecher.","Beim Graben stößt man auf etwas Altes aus der Zeit vor dem Fall.","Ein Förderer nutzt den Rückschlag und bietet „Hilfe“ an, zu einem Preis.","Gerücht: Der Bau sei verflucht. Arbeitskraft sinkt, bis jemand es entkräftet.","Sabotage? Es sieht nach Unfall aus, aber jemand hat nachgeholfen."];
+const HEROES = {Eran:{lvl:8,tier:2},Echemon:{lvl:8,tier:2},Davoc:{lvl:8,tier:2},Aven:{lvl:8,tier:2},Bukka:{lvl:6,tier:1}};
+const slug = s => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-");
+const ALL = []; DATA.forEach((g,gi)=>g.proj.forEach(p=>{p.id=slug(p.n);p.gi=gi;ALL.push(p);}));
+const byName = n => ALL.find(p=>p.n===n);
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const d = n => 1+Math.floor(Math.random()*n);
+const lpMax = h => 3+2*S.heroes[h].tier;
+
+function fresh(){
+ const s={v:1,sess:1,month:1,lastFestMonth:1,fest:{mod:0,from:0,to:0},freeHelp:0,heroes:{},p:{},hastUsed:{},freePfad:{},log:[]};
+ for(const h in HEROES) s.heroes[h]={...HEROES[h],lp:3+2*HEROES[h].tier};
+ ALL.forEach(p=>s.p[p.id]={done:0,mk:0,sw:0,ex:0});
+ return s;
+}
+let S = fresh();
+function normalize(){ // neue Projekte oder Heilige nachtragen
+ for(const h in HEROES) if(!S.heroes[h]) S.heroes[h]={...HEROES[h],lp:3+2*HEROES[h].tier};
+ ALL.forEach(p=>{ if(!S.p[p.id]) S.p[p.id]={done:0,mk:0,sw:0,ex:0}; });
+ S.hastUsed=S.hastUsed||{}; S.freePfad=S.freePfad||{}; S.log=S.log||[];
+}
+
+/* ---------- Speicher: nur im Arbeitsspeicher, Sichern über Datei oder Text ---------- */
+let dirty=false;
+function setSave(t){ $("savePill").textContent=t; }
+function save(){ dirty=true; setSave("ungesichert – unten sichern"); }
+function exportText(){ return JSON.stringify(S); }
+function importText(t){ const o=JSON.parse(t); if(!o||typeof o!=="object"||!o.p) throw new Error("kein Stand"); S=o; normalize(); dirty=false; renderAll(); setSave("Stand geladen"); }
+function initStore(){
+ setSave("neu – noch nichts gesichert");
+ $("ioDl").onclick=()=>{ const blob=new Blob([exportText()],{type:"application/json"}); const u=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=u; a.download="baumeisterbuch-stand-S"+S.sess+".json"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),1000); dirty=false; setSave("als Datei gesichert"); };
+ $("ioFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.text().then(t=>{ try{ importText(t); }catch(err){ setSave("Datei ist kein gültiger Stand"); } }); e.target.value=""; };
+ $("ioCopy").onclick=()=>{ const t=exportText(); $("ioTxt").value=t; $("ioTxt").select();
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(()=>{ dirty=false; setSave("Text kopiert"); },()=>setSave("Text markiert: bitte kopieren")); };
+ $("ioLoad").onclick=()=>{ try{ importText($("ioTxt").value); }catch(err){ setSave("Text ist kein gültiger Stand"); } };
+ window.addEventListener("beforeunload",e=>{ if(dirty){ e.preventDefault(); e.returnValue=""; } });
+}
+
+/* ---------- Regeln ---------- */
+function reqOk(p){
+ if(!p.req.length) return true;
+ return p.req.some(alt=>alt.every(([n,k])=>{ const q=byName(n); return q && S.p[q.id].done>=k; }));
+}
+const isDone = n => { const q=byName(n); return q && S.p[q.id].done>=q.a; };
+function festMod(){ const f=S.fest; return (S.sess>=f.from && S.sess<=f.to)?f.mod:0; }
+function noFestPenalty(){ return (S.month - S.lastFestMonth)>=2 ? -1 : 0; }
+function log(t){ S.log.unshift("S"+S.sess+" · "+t); S.log=S.log.slice(0,80); }
+
+/* ---------- Bauprobe ---------- */
+let pending=null; // laufende Probe vor dem Übernehmen
+function curProj(){ return ALL.find(p=>p.id===$("selProj").value); }
+function curHero(){ return $("selHero").value; }
+function calc(){
+ const p=curProj(), h=curHero(); if(!p||!h) return null;
+ const st=S.p[p.id], H=S.heroes[h], gang=+$("selGang").value;
+ const miss=!reqOk(p);
+ const base = 12 + H.lvl + p.m + (miss?4:0);
+ const hastSG = base + [0,5,10][gang];
+ const parts=[];
+ const skill=+$("inSkill").value||0;
+ let bonus=skill; parts.push(["Fertigkeit",skill]);
+ if($("cHelp").checked){bonus+=2;parts.push(["Hilfe",2]);}
+ if($("cFreeHelp").checked && S.freeHelp>0){bonus+=2;parts.push(["Fest-Hilfe",2]);}
+ if(st.sw){bonus+=2;parts.push(["Schwung",2]);}
+ if(st.ex){bonus-=2;parts.push(["Erschöpft",-2]);}
+ if(isDone("Bauhof") && p.n!=="Bauhof"){bonus+=1;parts.push(["Bauhof",1]);}
+ const fm=festMod(); if(fm){bonus+=fm;parts.push(["Fest",fm]);}
+ const nf=noFestPenalty(); if(nf){bonus+=nf;parts.push(["ohne Fest",nf]);}
+ if($("cOther").checked){const o=+$("inOther").value||0; bonus+=o; parts.push(["Sonstiges",o]);}
+ const schub=$("cSchub").checked||$("cPfad").checked;
+ let lpCost=0; if($("cSchub").checked && !$("cPfad").checked) lpCost++; if(gang===2) lpCost++;
+ const warns=[];
+ if(gang>0 && S.hastUsed[p.gi]===S.sess) warns.push("Dieser Orden hat in dieser Sitzung schon mit Hast gebaut.");
+ if(gang===2 && miss) warns.push("Gewaltmarsch ist ohne erfüllte Voraussetzung nicht erlaubt.");
+ if($("cPfad").checked && S.freePfad[h]===S.sess) warns.push("Der kostenlose Schub wurde in dieser Sitzung schon genutzt.");
+ if(lpCost>H.lp) warns.push("Nicht genug Legendenpunkte.");
+ if(lpCost>2) warns.push("Höchstens 2 Legendenpunkte pro Probe.");
+ if(st.done>=p.a) warns.push("Projekt ist schon fertig.");
+ return {p,h,st,H,gang,miss,base,hastSG,bonus,parts,schub,lpCost,warns,die:H.tier>=4?8:6};
+}
+function renderCalc(){
+ const c=calc(); if(!c){$("sgLine").innerHTML="";return;}
+ let html=`<span>SG ${c.base}${c.miss?" (Voraussetzung fehlt +4)":""}</span>`;
+ if(c.gang) html+=`<span class="big">Hast-SG ${c.hastSG}</span>`; else html=html.replace("<span>","<span class=\"big\">");
+ html+=c.parts.map(([n,v])=>`<span>${esc(n)} ${v>=0?"+":"−"}${Math.abs(v)}</span>`).join("");
+ if(c.schub) html+=`<span>Schub +1W${c.die}</span>`;
+ $("sgLine").innerHTML=html;
+ $("warn").textContent=c.warns.join(" ");
+ $("btnRoll").disabled = c.warns.some(w=>!w.startsWith("Dieser Orden"))? true:false;
+ $("lpInfo").textContent=`${c.h}: ${c.H.lp}/${lpMax(c.h)} LP · Kosten dieser Probe: ${c.lpCost} LP`;
+}
+function evaluate(c,d20,schubRoll){
+ const total=d20+c.bonus+schubRoll;
+ const r={d20,total,schubRoll,sec:0,lose:0,mk:0,sw:0,ex:0,label:"",cls:"",text:"",unglueck:null,pfusch:false};
+ const tier = sg => total>=sg+10||d20===20 ? 3 : total>=sg+5 ? 2 : total>=sg ? 1 : 0;
+ if(d20===1){
+  r.lose=1; r.cls="bad";
+  if(c.gang){ r.label="Unglück"; r.ex=1; r.unglueck=UNG[d(6)-1]; r.text="Kein Abschnitt, ein gebauter Abschnitt geht verloren, Verletzte. "+c.p.mis; }
+  else { r.label="Misslungen (natürliche 1)"; r.text="Kein Abschnitt, ein gebauter Abschnitt geht verloren. "+c.p.mis; }
+  return r;
+ }
+ if(!c.gang){
+  const t=tier(c.base);
+  if(t===0){r.label="Misslungen";r.cls="bad";r.text=c.p.mis;}
+  if(t===1){r.label="Minimum geschafft";r.cls="good";r.sec=1;}
+  if(t===2){r.label="Übertroffen";r.cls="good";r.sec=1;r.sw=1;r.text="Schwung: +2 auf die nächste Probe an diesem Projekt.";}
+  if(t===3){r.label="Weit übertroffen";r.cls="good";r.sec=2;r.text=c.p.weit;}
+  return r;
+ }
+ const extra=c.gang;
+ if(total>=c.hastSG){
+  const t=tier(c.hastSG);
+  r.cls="good"; r.label=["","Minimum geschafft","Übertroffen","Weit übertroffen"][t]+" (mit Hast)";
+  r.sec=(t===3?2:1)+extra; if(t===2){r.sw=1;r.text="Schwung: +2 auf die nächste Probe. ";} if(t===3) r.text=c.p.weit;
+ }else if(total>=c.base){
+  r.label="Pfusch"; r.cls="warn"; r.sec=1; r.mk=1; r.pfusch=true; r.text="Verdeckter Pfusch-Marker auf dem Projekt.";
+ }else{
+  r.label="Misslungen (Hast)"; r.cls="bad"; r.ex=1; r.text="Kein Abschnitt. Arbeiter erschöpft: −2 auf die nächste Probe. "+c.p.mis;
+ }
+ return r;
+}
+function roll(){
+ const c=calc(); if(!c) return;
+ const manual=parseInt($("inD20").value,10);
+ const d20 = manual>=1&&manual<=20 ? manual : d(20);
+ const schubRoll = c.schub ? d(c.die) : 0;
+ pending={c,r:evaluate(c,d20,schubRoll),lpSpent:c.lpCost,rerolled:false,averted:false};
+ showPending();
+}
+function showPending(){
+ const {c,r}=pending;
+ const lpLeft=c.H.lp-pending.lpSpent;
+ const canLP = lpLeft>0 && pending.lpSpent<2;
+ let h=`<div class="result ${r.cls}"><strong>${esc(r.label)}</strong>
+  <div class="small">W20: ${r.d20}${r.schubRoll?` · Schub: ${r.schubRoll}`:""} · Gesamt ${r.total} gegen SG ${c.base}${c.gang?` / Hast-SG ${c.hastSG}`:""}</div>
+  <div>${r.sec?`<b>+${r.sec} Abschnitt${r.sec>1?"e":""}</b> `:""}${r.lose?"<b>−1 Abschnitt</b> ":""}${esc(r.text)}</div>
+  ${r.unglueck?`<div class="small"><b>Erzählanlass:</b> ${esc(r.unglueck)}</div>`:""}
+  <div class="row" style="margin-top:8px">
+   <button class="primary" id="btnApply" type="button">Übernehmen</button>
+   <button id="btnReroll" type="button" ${(!canLP||pending.rerolled)?"disabled":""}>Neu würfeln (1 LP)</button>
+   ${r.pfusch?`<button id="btnAvert" type="button" ${!canLP?"disabled":""}>Pfusch abwenden (1 LP)</button>`:""}
+   <button id="btnDrop" type="button">Verwerfen</button>
+  </div></div>`;
+ $("resultBox").innerHTML=h;
+ $("btnApply").onclick=apply;
+ $("btnDrop").onclick=()=>{pending=null;$("resultBox").innerHTML="";};
+ $("btnReroll").onclick=()=>{ pending.lpSpent++; pending.rerolled=true; const sr=c.schub?d(c.die):0; pending.r=evaluate(c,d(20),sr); showPending(); };
+ if(r.pfusch) $("btnAvert").onclick=()=>{ pending.lpSpent++; pending.averted=true; Object.assign(pending.r,{mk:0,pfusch:false,label:"Minimum geschafft (Pfusch abgewendet)",cls:"good",text:"Der Pfusch wurde sofort bemerkt und behoben."}); showPending(); };
+}
+function apply(){
+ const {c,r}=pending, st=S.p[c.p.id];
+ st.done=Math.max(0,Math.min(c.p.a, st.done - r.lose + r.sec));
+ st.mk+=r.mk; st.sw=r.sw; st.ex=r.ex;
+ S.heroes[c.h].lp=Math.max(0,S.heroes[c.h].lp-pending.lpSpent);
+ if(c.gang) S.hastUsed[c.p.gi]=S.sess;
+ if($("cPfad").checked) S.freePfad[c.h]=S.sess;
+ if($("cFreeHelp").checked && S.freeHelp>0) S.freeHelp--;
+ const gname=["","Antreiben","Gewaltmarsch"][c.gang];
+ log(`${c.h} · ${c.p.n}${gname?" ("+gname+")":""}: ${r.label}, ${r.total} gegen ${c.gang?c.hastSG:c.base} → ${st.done}/${c.p.a}${r.mk?" · Pfusch-Marker":""}${pending.lpSpent?` · ${pending.lpSpent} LP`:""}${st.done>=c.p.a?" · FERTIG":""}`);
+ if(r.unglueck) log("Unglück: "+r.unglueck);
+ pending=null; $("resultBox").innerHTML=""; $("inD20").value=""; $("cSchub").checked=false; $("cPfad").checked=false; $("cFreeHelp").checked=false;
+ save(); renderAll();
+}
+
+/* ---------- Feste ---------- */
+function festCalc(){
+ const h=$("festHero").value; const H=S.heroes[h];
+ const parts=[["Fertigkeit",+$("festSkill").value||0]];
+ if($("festHelp").checked) parts.push(["Hilfe",2]);
+ if(isDone("Theater")) parts.push(["Theater",2]);
+ if(isDone("Klingenbräu-Brauerei")||isDone("Schänke der Orden")) parts.push(["Klingenbräu",2]);
+ if(isDone("Theaterplatz")||isDone("Marktplatz")) parts.push(["Platz",1]);
+ const bonus=parts.reduce((a,b)=>a+b[1],0);
+ return {h,H,sg:12+H.lvl,parts,bonus,schub:$("festSchub").checked,die:H.tier>=4?8:6};
+}
+function renderFest(){
+ const f=festCalc();
+ $("festLine").innerHTML=`<span class="big">SG ${f.sg}</span>`+f.parts.map(([n,v])=>`<span>${esc(n)} +${v}</span>`).join("")+(f.schub?`<span>Schub +1W${f.die}</span>`:"");
+ const used = S.lastFestMonth===S.month && S.festDone===S.month;
+ $("festBtn").disabled = used || (f.schub && f.H.lp<1);
+ if(used) $("festBox").innerHTML=`<p class="small">In diesem Spielmonat wurde schon gefeiert.</p>`;
+}
+function feast(){
+ const f=festCalc();
+ const m=parseInt($("festD20").value,10); const d20=m>=1&&m<=20?m:d(20);
+ const sr=f.schub?d(f.die):0; const total=d20+f.bonus+sr;
+ let label,cls,text;
+ if(total<f.sg){ label="Misslungen";cls="bad";text="−2 auf alle Bauproben bis zum nächsten Fest. Ein Gerücht oder Streit (SL)."; S.fest={mod:-2,from:S.sess,to:1e9}; }
+ else{
+  S.fest={mod:2,from:S.sess+1,to:S.sess+1};
+  if(total>=f.sg+10||d20===20){ label="Weit übertroffen";cls="good";S.freeHelp++; const mk=ALL.filter(p=>S.p[p.id].mk>0); text="+2 auf alle Bauproben der nächsten Sitzung, eine Fest-Hilfe, eine Machtgruppe bietet Unterstützung an."+(mk.length?` Entdeckter Pfusch: ${mk[0].n}.`:" (Kein Pfusch in der Stadt.)"); }
+  else if(total>=f.sg+5){ label="Übertroffen";cls="good";S.freeHelp++;text="+2 auf alle Bauproben der nächsten Sitzung und eine Fest-Hilfe (+2)."; }
+  else { label="Gelungen";cls="good";text="+2 auf alle Bauproben der nächsten Sitzung."; }
+ }
+ if(f.schub) S.heroes[f.h].lp=Math.max(0,S.heroes[f.h].lp-1);
+ S.lastFestMonth=S.month; S.festDone=S.month;
+ log(`Fest (${f.h}): ${label}, ${total} gegen ${f.sg}`);
+ $("festBox").innerHTML=`<div class="result ${cls}"><strong>${label}</strong><div class="small">W20 ${d20}${sr?` · Schub ${sr}`:""} · Gesamt ${total}</div><div>${esc(text)}</div><div class="small">Großes Fest: Belastungsprobe für Plätze und Theater (siehe Pfusch).</div></div>`;
+ $("festD20").value=""; $("festSchub").checked=false;
+ save(); renderAll(true);
+}
+
+/* ---------- Darstellung ---------- */
+function fillSelects(){
+ const so=$("selOrden"), keep=so.value;
+ so.innerHTML=DATA.map((g,i)=>`<option value="${i}">${esc(g.orden)}</option>`).join(""); if(keep) so.value=keep;
+ fillProj();
+ const hs=Object.keys(S.heroes).map(h=>`<option>${esc(h)}</option>`).join("");
+ const fh=$("festHero"), kf=fh.value; fh.innerHTML=hs; if(kf) fh.value=kf;
+}
+function fillProj(){
+ const g=DATA[+$("selOrden").value||0]; const sp=$("selProj"), keep=sp.value;
+ sp.innerHTML=g.proj.map(p=>{const st=S.p[p.id];return `<option value="${p.id}">${esc(p.n)} (${st.done}/${p.a})${st.done>=p.a?" ✓":""}</option>`}).join("");
+ if(keep && g.proj.some(p=>p.id===keep)) sp.value=keep;
+ const sh=$("selHero"), kh=sh.value;
+ sh.innerHTML=Object.keys(S.heroes).map(h=>`<option>${esc(h)}</option>`).join("");
+ sh.value = (kh && g.held.includes(kh)) ? kh : g.held[0];
+}
+function renderOrders(){
+ $("orders").innerHTML=DATA.map((g,gi)=>`<div class="order"><h3>${esc(g.orden)} <span class="held">${esc(g.held.join(" und "))}${S.hastUsed[gi]===S.sess?" · Hast genutzt":""}</span></h3>
+ <div class="tw"><table><thead><tr><th>Projekt</th><th>Fortschritt</th><th>SG-Mod.</th><th>Stand</th></tr></thead><tbody>
+ ${g.proj.map(p=>{const st=S.p[p.id];const ok=reqOk(p);const done=st.done>=p.a;
+  return `<tr><td><span class="pname">${esc(p.n)}</span>${p.neu?' <span class="tag neu">neu</span>':""}<details><summary>${esc(p.f)}</summary><div class="small">Voraussetzung: ${esc(p.vt)}<br>Fertig: ${esc(p.fertig)}</div></details></td>
+  <td><div class="pips">${Array.from({length:p.a},(_,i)=>`<button type="button" class="pip ${i<st.done?"on":""}" data-p="${p.id}" data-i="${i}" aria-label="${esc(p.n)} Abschnitt ${i+1}"></button>`).join("")}</div></td>
+  <td>${p.m===0?"±0":(p.m>0?"+"+p.m:"−"+(-p.m))}</td>
+  <td>${done?'<span class="tag done">fertig</span>':""}${!done?(ok?'<span class="tag ok">frei</span>':'<span class="tag no">Voraussetzung fehlt</span>'):""}${st.sw?'<span class="tag sw">Schwung</span>':""}${st.ex?'<span class="tag ex">erschöpft</span>':""}${st.mk?`<span class="tag mk">Pfusch ×${st.mk}</span>`:""}</td></tr>`}).join("")}
+ </tbody></table></div></div>`).join("");
+ document.querySelectorAll(".pip").forEach(b=>b.onclick=()=>{const st=S.p[b.dataset.p];const i=+b.dataset.i;st.done=(st.done===i+1)?i:i+1;const p=ALL.find(x=>x.id===b.dataset.p);log(`Hand: ${p.n} → ${st.done}/${p.a}`);save();renderAll();});
+}
+function renderHeroes(){
+ $("heroes").innerHTML=Object.keys(S.heroes).map(h=>{const H=S.heroes[h];return `<div class="hero"><div><b>${esc(h)}</b> <span class="lp">${H.lp}/${lpMax(h)} LP</span></div>
+  <label>Stufe<input type="number" min="1" max="20" value="${H.lvl}" data-h="${esc(h)}" data-k="lvl"></label>
+  <label>Legst.<input type="number" min="1" max="10" value="${H.tier}" data-h="${esc(h)}" data-k="tier"></label>
+  <div class="row"><button type="button" data-lp="${esc(h)}" data-d="-1" aria-label="${esc(h)} ein LP weniger">−</button><button type="button" data-lp="${esc(h)}" data-d="1" aria-label="${esc(h)} ein LP mehr">+</button></div></div>`}).join("");
+ document.querySelectorAll("#heroes input").forEach(i=>i.onchange=()=>{const v=Math.max(1,parseInt(i.value,10)||1);S.heroes[i.dataset.h][i.dataset.k]=v;save();renderAll();});
+ document.querySelectorAll("#heroes button[data-lp]").forEach(b=>b.onclick=()=>{const H=S.heroes[b.dataset.lp];H.lp=Math.max(0,Math.min(lpMax(b.dataset.lp),H.lp+ +b.dataset.d));save();renderAll();});
+}
+function renderPfusch(){
+ const mk=ALL.filter(p=>S.p[p.id].mk>0);
+ $("pfusch").innerHTML = mk.length ? mk.map(p=>`<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding:6px 0"><span><b>${esc(p.n)}</b> · ${S.p[p.id].mk} Marker</span>
+  <span class="row"><button type="button" data-bel="${p.id}">Belastungsprobe</button><button type="button" data-fix="${p.id}">Nachgebessert</button></span></div>`).join("")+`<div id="belBox" class="small"></div>`
+  : `<p class="small">Keine Pfusch-Marker. Sie entstehen, wenn eine Probe mit Hast nur den gewöhnlichen SG erreicht.</p>`;
+ document.querySelectorAll("[data-fix]").forEach(b=>b.onclick=()=>{const p=ALL.find(x=>x.id===b.dataset.fix);S.p[p.id].mk--;log(`Pfusch nachgebessert: ${p.n}`);save();renderAll();});
+ document.querySelectorAll("[data-bel]").forEach(b=>b.onclick=()=>{const p=ALL.find(x=>x.id===b.dataset.bel);const n=S.p[p.id].mk;const w=Array.from({length:n},()=>d(6));const fails=w.filter(x=>x<=2).length;
+  const t=`${p.n}: W6 ${w.join(", ")} → ${fails?fails+"× versagt der Bau (Riss, Einsturz, geborstenes Gerät)":"hält stand"}`;log("Belastung: "+t);save();renderAll();$("belBox").textContent=t;});
+}
+function renderEvents(){
+ $("evBtns").innerHTML=DATA.map((g,i)=>`<button type="button" data-ev="${i}">${esc(g.orden.replace("Orden ","").replace(/ \(.+\)/,""))}</button>`).join("");
+ document.querySelectorAll("[data-ev]").forEach(b=>b.onclick=()=>{const g=DATA[+b.dataset.ev];const w=d(6);const kind=w<=2?"Rückschlag":w<=4?"Szene":"Glücksfall";
+  $("evBox").innerHTML=`<div class="result ${w<=2?"bad":w<=4?"":"good"}"><strong>${esc(g.orden)} · W6 ${w} (${kind})</strong><div>${esc(g.events[w-1])}</div>${w<=2&&isDone("Theater")?'<div class="small">Theater fertig: einmal pro Sitzung kann dieses Ereignis ignoriert werden.</div>':""}</div>`;
+  log(`Ereignis ${g.orden}: W6 ${w}`);save();renderLog();});
+}
+function renderLog(){ $("log").innerHTML=S.log.length?S.log.map(t=>`<div>${esc(t)}</div>`).join(""):`<p class="small">Noch keine Einträge.</p>`; }
+function renderHead(){
+ $("sessPill").textContent="Sitzung "+S.sess; $("monthPill").textContent="Spielmonat "+S.month;
+ const fm=festMod(), nf=noFestPenalty();
+ $("festPill").textContent="Fest: "+(fm>0?"+"+fm:fm<0?"−"+(-fm):"±0")+(nf?" · ohne Fest −1":"")+(S.freeHelp?` · ${S.freeHelp}× Fest-Hilfe`:"");
+}
+function renderAll(keepFest){ fillSelects(); renderOrders(); renderHeroes(); renderPfusch(); renderEvents(); renderLog(); renderHead(); renderCalc(); renderFest(); if(!keepFest) {} }
+
+/* ---------- Ereignisse der Bedienelemente ---------- */
+$("selOrden").onchange=()=>{fillProj();renderCalc();};
+["selProj","selHero","selGang","inSkill","cHelp","cSchub","cPfad","cFreeHelp","cOther","inOther"].forEach(id=>{$(id).addEventListener("input",renderCalc);$(id).addEventListener("change",renderCalc);});
+["festHero","festSkill","festHelp","festSchub"].forEach(id=>{$(id).addEventListener("input",renderFest);$(id).addEventListener("change",renderFest);});
+$("btnRoll").onclick=roll; $("festBtn").onclick=feast;
+$("newSess").onclick=()=>{S.sess++;log("Neue Sitzung");save();renderAll();};
+$("newMonth").onclick=()=>{S.month++;log("Neuer Spielmonat "+S.month);save();renderAll();};
+$("lpReset").onclick=()=>{for(const h in S.heroes) S.heroes[h].lp=lpMax(h);log("Legendenpunkte aufgefüllt");save();renderAll();};
+
+renderAll(); initStore();
+</script>
+</body>
+</html>
